@@ -10,20 +10,86 @@ pages, one post, five journey entries, `/about`, `/now`, RSS, sitemap, 404.
 
 **Remaining buckets, in order:**
 
-1. **Repo-reading pass.** Rewrite each case study from the actual repositories
-   (`advocate`, `sage`, `atlas`, `munich-apartment-agent`, `voice-scheduler`,
-   `youtube-mcp-server`, `nemotron-mcp`) around the real decision and the real
-   trade-off. The current bodies are written from `master_resume_en.md` - accurate but
-   shallow, describing what each system does rather than what happened while building
-   it. Alp has explicitly authorised reading and reshaping the projects for
-   presentation.
-2. **Blog posts.** One sample written (`your-rag-has-no-baseline`) to establish register.
-   Topics should carry Alp's own opinions, not inferred ones.
-3. **Motion pass.** See below.
+1. ~~**Repo-reading pass.**~~ Done 2026-08-16. See "Repo-reading pass" below.
+2. **Visual and interaction pass.** Promoted to top priority by Alp on 2026-08-16, ahead
+   of the two buckets below. Brief: `visual-direction.md`.
+3. **Blog posts.** One sample written (`your-rag-has-no-baseline`) to establish register.
+   Topics should carry Alp's own opinions, not inferred ones. Scope widened 2026-08-16 to
+   include explainers about the AI field, not only his own work.
 4. **Deploy.** Register `alpozer.dev`, Cloudflare Pages, CI gate on broken links and
    accessibility regressions.
 
-## Motion and dynamism - direction added 2026-08-16
+## Repo-reading pass - done 2026-08-16
+
+All six case studies rewritten from each repo's `docs/context/` pack plus the source
+where the pack was thin. Source of truth was `decisions.md` and `gotchas.md` in each
+repo, which is where the real trade-offs already live; `STATUS.md` fixed the honest
+current state.
+
+**What the pass corrected, not just deepened:**
+
+- **Atlas had a fabricated feature.** The old body led on a "live per-request token and
+  cost meter" as the thing worth keeping. There is no cost meter. `lib/models.ts` holds
+  per-1M price metadata and nothing renders or computes spend; the only string asserting
+  a cost meter is a canned entry inside the `kbLookup` tool fixture, i.e. test data.
+  Also wrong: Sage is *not* "wired in as a callable tool". It is a separate `/ask` route
+  behind a same-origin proxy, and keeping the two agent loops apart is a recorded
+  decision.
+- **Munich stack was stale.** Frontmatter listed Supabase and Docker. Supabase was
+  deliberately removed for local SQLite; deployment is a systemd timer, not Docker. Also
+  "running without me for months" overclaimed - it is roughly one month, with a known
+  stuck-scraper bug still open, which the rewrite now states.
+- **Voice Scheduler had two adapters, not three.** Hausarzt, dentist and restaurant.
+- **Sage numbers were vague.** Real baseline is now on the page (faithfulness 0.948,
+  answer_relevancy 0.620, context_precision 0.593, context_recall 0.679 over 36 triples).
+
+**Status values re-derived from repo state:** `munich` live, `youtube-mcp-server` and
+`voice-scheduler` and `atlas` shipped, `advocate` and `sage` building. Sage moved off
+"shipped" because W6 optimisation is in flight and no eval run currently completes.
+
+**Seventh project added as a draft.** `nemotron-mcp.md`, `draft: true`, so it does not
+build until Alp decides. The repo is private on GitHub, so it carries no `repo:` link.
+Content is deliberately scrubbed of the multi-account free-quota detail.
+
+**Deliberately left out, for Alp to rule on:**
+
+1. `voice-scheduler`'s German persona prompt instructs the agent to never reveal it is
+   AI. Real disclosure expectations apply to a German booking line, and publishing that
+   rule reads badly regardless. Not on the site; worth changing in the repo.
+2. `advocate` application history (employers applied to) - invariant 1 forbids it, so no
+   company names appear even where the repo's status notes are specific.
+3. The home server's hostname and tailnet name are generalised to "a private network".
+4. The public GitHub description of `munich-apartment-agent` still says "dedups to
+   Supabase", which now contradicts the site. Fix it on GitHub.
+5. `your-rag-has-no-baseline` claims the unanswerable pass rate "started at roughly
+   zero". Sage's scorecard supports a related but different reading (those questions are
+   correctly refused and score zero *on the relevancy metric*). Reconcile in bucket 2.
+
+**Claim coverage is unchanged.** No claim IDs were added or altered, so
+`npm run check:claims` still reports the same 10 unresolved references as before - see
+open question 2. The rewrites add many technical facts about Alp's own repositories,
+which are self-evidencing in a way dossier-backed biographical facts are not; whether
+invariant 2 should extend to them is worth deciding explicitly.
+
+## Repo visibility, checked 2026-08-16
+
+Governs which case studies may carry a `repo:` link. Verified with `gh api`.
+
+**Public:** `advocate`, `munich-apartment-agent`, `youtube-mcp-server`.
+**Private:** `sage`, `atlas`, `voice-scheduler`, `nemotron-mcp`.
+
+Re-check before adding a link; a 404 on a portfolio is worse than no link.
+
+## Motion and dynamism - SUPERSEDED 2026-08-16 by `visual-direction.md`
+
+Alp escalated this bucket the same day, from "step by step" to a full visual and
+interaction pass at top priority, with page weight explicitly permitted. **Read
+`visual-direction.md` before doing any design work** - it carries the current brief, what
+he asked for by name, and the three questions he still needs to answer. The section below
+is kept because its constraints on *how* to animate still hold; its framing of the bucket
+as small and incremental does not.
+
+### Original entry - direction added 2026-08-16
 
 Alp's reaction to the built editorial site: *"For a start, it is not that bad. But we
 want more dynamism as like Kerem is having, moving shapes in background is not a bad
@@ -149,9 +215,15 @@ Adopted from the reference site, which gets this right, then deepened:
 
 ## Decisions taken
 
-1. **Design direction: A, editorial.** Light-first warm paper, Newsreader display serif,
-   Inter body, ruled index lists, single deep-blue accent. Dark mode is a designed
-   palette, not an inversion. Mockups kept in `mockups/` for reference.
+1. ~~**Design direction: A, editorial.**~~ **SUPERSEDED 2026-08-16.** Alp ruled the visual
+   identity a **full reset**: warm paper, Newsreader and Inter are no longer assumed, and
+   the pairing and palette are open again. Three coded prototypes (`mockups/c-quiet.html`,
+   `d-console.html`, `e-broadsheet.html`) replace it, to be judged in a browser rather than
+   argued in the abstract. See `visual-direction.md` for the ruling and the prototype table.
+   The original entry read: light-first warm paper, Newsreader display serif, Inter body,
+   ruled index lists, single deep-blue accent, with a designed dark palette rather than an
+   inversion. Nothing in the built site has been re-styled yet, so `src/styles/tokens.css`
+   still encodes direction A - it is now the *current implementation*, not the *decision*.
 2. **Domain: `alpozer.dev`**, confirmed available 2026-08-16 (as were `alpozer.com` and
    `alpozer.de`). Not yet registered.
 

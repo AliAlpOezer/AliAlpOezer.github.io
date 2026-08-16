@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "check:claims": "node scripts/check-claims.mjs"
+    "check:claims": "node scripts/check-claims.mjs",
+    "mockups": "node scripts/serve-mockups.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.5",

@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en" data-proto="e">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E - Broadsheet</title>
+<link rel="stylesheet" href="./fonts.css">
+<style>
+/* ============================================================
+   E - BROADSHEET.  Editorial with teeth.
+   Not the warm-paper register: stark white, true black, one hot
+   accent. A Didone (Bodoni Moda) at sizes large enough for its
+   contrast to actually show, against a sturdy grotesk (Archivo).
+   The grid is confident and then breaks on purpose - the pattern
+   that won Uncommon Studio the Awwwards developer award.
+   ============================================================ */
+:root {
+  --paper:   #fbfbf9;
+  --paper-2: #f0efea;
+  --black:   #0b0b0b;
+  --ink:     #14140f;
+  --mute:    #56564d;
+  --faint:   #8f8f85;
+  --rule:    #ddddd4;
+  --hot:     #d8452a;
+
+  --page:    1240px;
+  --gutter:  clamp(1.25rem, 5vw, 3.5rem);
+  --section: clamp(5rem, 12vh, 8.5rem);
+  --ease:    cubic-bezier(.22,.68,.24,1);
+
+  --serif: "Bodoni Moda", ui-serif, Didot, "Times New Roman", serif;
+  --grot:  "Archivo", ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--grot); font-size: 16px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: var(--page); margin-inline: auto; padding-inline: var(--gutter); }
+a { color: inherit; }
+[id] { scroll-margin-top: 5rem; }
+:focus-visible { outline: 2px solid var(--hot); outline-offset: 3px; }
+
+h1, h2, .serif { font-family: var(--serif); font-weight: 500; margin: 0; }
+/* A Didone only earns its contrast above ~4rem. Below that it just looks thin,
+   which is why this direction commits to very large display sizes. */
+h1 { font-size: clamp(3rem, 11vw, 9rem); line-height: .92; letter-spacing: -.028em; }
+h2 { font-size: clamp(2.25rem, 5.5vw, 4.25rem); line-height: 1; letter-spacing: -.022em; }
+
+.kicker {
+  font-family: var(--grot); font-size: .6875rem; font-weight: 600;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--hot); margin: 0;
+}
+.lede { font-size: clamp(1.0625rem, 1.5vw, 1.3125rem); line-height: 1.5;
+        color: var(--mute); max-width: 40rem; }
+.small { font-size: .8125rem; color: var(--mute); }
+.num { font-family: var(--serif); font-size: .875rem; color: var(--faint); font-weight: 500; }
+
+/* ---------- header ---------- */
+header {
+  position: sticky; top: 0; z-index: 60; height: 58px; display: flex; align-items: center;
+  background: color-mix(in oklab, var(--paper) 82%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s var(--ease), background-color .4s var(--ease);
+}
+header.stuck { border-bottom-color: var(--ink); }
+/* This design flips to full-bleed black twice. A paper-coloured bar floating
+   over those sections reads as a bug, so the masthead inverts with them. */
+header.on-dark { background: color-mix(in oklab, var(--black) 78%, transparent); color: var(--paper); }
+header.on-dark nav a { color: #a8a89e; }
+header.on-dark nav a:hover { color: var(--hot); }
+header.on-dark.stuck { border-bottom-color: #33332e; }
+header.on-dark .brand svg path[fill="#14140f"] { fill: var(--paper); }
+header.on-dark .brand svg circle:not([fill="#d8452a"]) { fill: var(--paper); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.brand { display: flex; align-items: center; gap: .625rem; text-decoration: none; }
+.brand .wm { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; letter-spacing: -.02em; }
+nav { display: flex; gap: 1.75rem; }
+nav a { font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+        color: var(--mute); text-decoration: none; transition: color .2s var(--ease); }
+nav a:hover { color: var(--hot); }
+@media (max-width: 48rem) { nav { gap: 1rem; } nav a:nth-child(n+4) { display: none; } }
+
+/* ---------- hero: the grid breaks here on purpose ---------- */
+.hero { padding: clamp(3.5rem, 10vh, 7rem) 0 var(--section); }
+.hero h1 { max-width: 13ch; }
+.hero h1 em { font-style: italic; color: var(--hot); }
+.hero-under {
+  display: grid; gap: 2rem; margin-top: 3rem;
+  grid-template-columns: minmax(0,1fr);
+  border-top: 2px solid var(--ink); padding-top: 1.75rem;
+}
+@media (min-width: 54rem) {
+  /* Deliberate asymmetry: text sits in the wide column, meta breaks out right. */
+  .hero-under { grid-template-columns: minmax(0,1.6fr) minmax(0,1fr); gap: 4rem; }
+}
+.hero-meta { display: flex; flex-direction: column; gap: .625rem; }
+.hero-meta div { display: flex; justify-content: space-between; gap: 1rem;
+                 border-bottom: 1px solid var(--rule); padding-bottom: .5rem;
+                 font-size: .8125rem; }
+.hero-meta span:last-child { color: var(--faint); }
+
+/* ---------- sections ---------- */
+.band { padding: var(--section) 0; }
+.band--dark { background: var(--black); color: var(--paper); }
+.band--dark .lede, .band--dark .small { color: #a8a89e; }
+.band--dark .num { color: #6a6a60; }
+.band--tint { background: var(--paper-2); }
+.band-head { display: grid; gap: 1rem; margin-bottom: 3.5rem; }
+.band-head hr { border: 0; border-top: 2px solid currentColor; margin: 1rem 0 0; opacity: .9; }
+
+/* ---------- work: editorial entries, spotlight on the whole plate ---------- */
+.plates { isolation: isolate; }
+.plate {
+  position: relative; display: grid; gap: .75rem 2.5rem; align-items: start;
+  grid-template-columns: minmax(0,1fr);
+  padding: 2.25rem .5rem; border-top: 1px solid var(--rule);
+  transition: opacity .35s var(--ease);
+}
+.plate:last-child { border-bottom: 1px solid var(--rule); }
+@media (min-width: 56rem) {
+  .plate { grid-template-columns: 2.5rem minmax(0,1.15fr) minmax(0,1fr) 6rem; align-items: baseline; }
+}
+.plate::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0;
+  transition: opacity .4s var(--ease);
+  background: radial-gradient(24rem 14rem at var(--mx) var(--my),
+              rgba(216,69,42,.09), transparent 70%);
+}
+.plates:hover .plate::before { opacity: 1; }
+.plate > * { position: relative; z-index: 1; }
+.plate[data-dim="true"] { opacity: .2; }
+.plate h3 { font-family: var(--serif); font-weight: 500; font-size: clamp(1.5rem,2.4vw,2rem);
+            line-height: 1.05; letter-spacing: -.02em; margin: 0;
+            transition: color .25s var(--ease); }
+.plate:hover h3 { color: var(--hot); }
+.plate p { margin: 0; color: var(--mute); font-size: .9375rem; }
+.plate .st { font-size: .6875rem; font-weight: 600; letter-spacing: .14em;
+             text-transform: uppercase; color: var(--faint); }
+.plate .st[data-s="live"] { color: var(--hot); }
+.plate .tk { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+@media (min-width: 56rem) { .plate .tk { grid-column: 3 / 4; margin-top: .75rem; } }
+.tk span { font-size: .6875rem; letter-spacing: .04em; text-transform: uppercase;
+           color: var(--faint); transition: color .25s var(--ease); }
+.tk span[data-hit="true"] { color: var(--hot); font-weight: 600; }
+
+/* ============================================================
+   Signature set piece: the exhibit.
+   The copy runs down the left as a column of an article; the plate
+   is pinned right and changes as each stage passes. The drama is a
+   Didone numeral at display size - the one thing this direction can
+   do that neither of the others can. A native scroll timeline cannot
+   drive one shared plate from six sibling ranges without
+   `timeline-scope`, so this is the single place that uses an
+   observer; without JS every stage still reads as prose and the
+   plate rests on the full index.
+   ============================================================ */
+.run-grid { display: grid; gap: 3rem; align-items: start; }
+@media (min-width: 62rem) {
+  /* Copy left, exhibit right - a figure sits in the outer column of a spread. */
+  .run-grid { grid-template-columns: minmax(0,1fr) minmax(0,22rem); gap: 5rem; }
+  .ex-hold { order: 2; position: sticky; top: 5rem; height: calc(100vh - 5rem);
+             display: flex; align-items: center; }
+  .ex-hold > .ex { width: 100%; }
+  .steps { order: 1; }
+}
+.ex { border-top: 2px solid var(--ink); padding-top: 1.25rem; }
+.ex-num { font-family: var(--serif); font-weight: 500; font-size: clamp(5.5rem, 11vw, 9.5rem);
+          line-height: .82; letter-spacing: -.02em; display: block; }
+.ex-name { font-family: var(--serif); font-style: italic; font-weight: 500;
+           font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.05; color: var(--hot);
+           display: block; margin-top: .25rem; }
+.ex-mode { font-size: .6875rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+           color: var(--faint); display: block; margin-top: 1.25rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .ex.flip .ex-num, .ex.flip .ex-name { animation: exin .5s var(--ease) both; }
+  .ex.flip .ex-name { animation-delay: .05s; }
+}
+@keyframes exin { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.ex-index { margin-top: 2rem; border-top: 1px solid var(--rule); }
+.ex-index div { display: grid; grid-template-columns: 2rem minmax(0,1fr); column-gap: .875rem;
+                padding: .5rem 0; border-bottom: 1px solid var(--rule); font-size: .8125rem;
+                color: var(--faint); transition: color .3s var(--ease); }
+.ex-index div .n { font-family: var(--serif); }
+.ex-index div[data-past="true"] { color: var(--mute); }
+.ex-index div[data-on="true"] { color: var(--ink); font-weight: 600; }
+.ex-index div[data-on="true"] .n { color: var(--hot); }
+
+/* Bottom padding keeps the pinned exhibit in view through the final stage:
+   without it the sticky element bottoms out against the container while the
+   last step is still being read, and the plate scrolls half out of frame. */
+.steps { display: grid; padding-bottom: 14vh; }
+.step { min-height: 58vh; display: flex; flex-direction: column; justify-content: center;
+        padding: 2rem 0; transition: opacity .45s var(--ease); }
+/* `.step p` outranks a bare `.kicker`, which was repainting the stage label
+   muted grey instead of vermilion. */
+.step-in .kicker { color: var(--hot); }
+.step h2 { margin-top: .75rem; font-size: clamp(2rem, 4vw, 3.25rem); }
+.step p { margin: 1.25rem 0 0; max-width: 34rem; color: var(--mute); font-size: 1.0625rem; }
+.steps[data-live="true"] .step { opacity: .26; }
+.steps[data-live="true"] .step[data-on="true"] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .steps[data-live="true"] .step { opacity: 1; } }
+
+/* ---------- stack: an editorial index, not a logo wall ---------- */
+.stack-grid { display: grid; gap: 3rem; }
+@media (min-width: 62rem) { .stack-grid { grid-template-columns: 20rem minmax(0,1fr); gap: 5rem; } }
+.stack-aside { position: sticky; top: 6rem; align-self: start; }
+.readout { margin-top: 1.5rem; font-size: .9375rem; line-height: 1.55; min-height: 6rem; color: #a8a89e; }
+.readout b { font-family: var(--serif); font-size: 1.375rem; font-weight: 600;
+             color: var(--paper); display: block; margin-bottom: .375rem; }
+.field { display: flex; flex-wrap: wrap; gap: .5rem .375rem; }
+.chip {
+  font-family: var(--grot); font-size: .8125rem; font-weight: 500; cursor: pointer;
+  background: transparent; color: #a8a89e;
+  border: 1px solid #33332e; border-radius: 0; padding: .4375rem .75rem; min-height: 34px;
+  transition: color .2s var(--ease), border-color .2s var(--ease),
+              background .2s var(--ease), opacity .2s var(--ease);
+}
+.chip:hover { color: var(--paper); border-color: #6a6a60; }
+.chip[data-tier="explored"] { border-style: dashed; color: #6a6a60; }
+.chip[aria-pressed="true"] { background: var(--hot); border-color: var(--hot);
+                             color: var(--paper); font-weight: 600; }
+.field[data-filtering="true"] .chip:not([aria-pressed="true"]) { opacity: .28; }
+.legend { display: flex; gap: 1.75rem; margin-top: 1.75rem; font-size: .6875rem;
+          letter-spacing: .14em; text-transform: uppercase; color: #6a6a60; }
+
+/* ---------- method: four columns of a leader page ---------- */
+.method { display: grid; gap: 3rem 3.5rem; grid-template-columns: minmax(0,1fr); }
+@media (min-width: 52rem) { .method { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.mth { border-top: 2px solid var(--ink); padding-top: 1.25rem; }
+.mth .n { font-family: var(--serif); font-size: 2.5rem; font-weight: 500; line-height: 1;
+          display: block; color: var(--hot); }
+.mth h3 { font-family: var(--serif); font-weight: 500; font-size: 1.625rem; line-height: 1.1;
+          letter-spacing: -.015em; margin: .875rem 0 0; }
+.mth p { margin: .875rem 0 0; color: var(--mute); font-size: .9375rem; }
+
+/* ---------- journey: the rail, set as a masthead index ---------- */
+.jr { display: grid; gap: 2.5rem; }
+@media (min-width: 58rem) { .jr { grid-template-columns: 10rem minmax(0,1fr); gap: 4rem; } }
+.jr-rail { position: sticky; top: 6rem; align-self: start; display: flex;
+           flex-direction: column; gap: .125rem; }
+.jr-rail a { display: block; padding: .375rem 0 .375rem .875rem; font-size: .75rem;
+             font-weight: 600; letter-spacing: .1em; color: var(--faint); text-decoration: none;
+             border-left: 2px solid var(--rule); font-variant-numeric: tabular-nums;
+             transition: color .3s var(--ease), border-color .3s var(--ease); }
+.jr-rail a[data-on="true"] { color: var(--hot); border-left-color: var(--hot); }
+.jr-list { list-style: none; margin: 0; padding: 0; }
+.jr-item { padding: 2.25rem 0; border-top: 1px solid var(--rule); }
+.jr-item:first-child { border-top: 0; padding-top: 0; }
+.jr-when { font-size: .6875rem; font-weight: 600; letter-spacing: .16em;
+           text-transform: uppercase; color: var(--faint); }
+.jr-item h3 { font-family: var(--serif); font-weight: 500; font-size: clamp(1.5rem,2.4vw,2rem);
+              line-height: 1.05; letter-spacing: -.02em; margin: .625rem 0 0; }
+.jr-item .jr-org { font-size: .8125rem; font-weight: 600; letter-spacing: .06em;
+                   text-transform: uppercase; color: var(--hot); margin: .5rem 0 0; }
+.jr-item p { margin: .875rem 0 0; color: var(--mute); font-size: .9375rem; max-width: 42rem; }
+
+/* ---------- writing ---------- */
+.post { display: block; text-decoration: none; border-top: 2px solid var(--ink);
+        border-bottom: 1px solid var(--rule); padding: 2.25rem 0;
+        transition: padding-left .35s var(--ease); }
+.post:hover { padding-left: .75rem; }
+.post:hover h2 { color: var(--hot); }
+.post h2 { transition: color .25s var(--ease); }
+.post .when { font-size: .6875rem; font-weight: 600; letter-spacing: .16em;
+              text-transform: uppercase; color: var(--faint); }
+.post p { margin: 1rem 0 0; color: var(--mute); max-width: 42rem; }
+.post .go { display: inline-block; margin-top: 1.25rem; font-size: .75rem; font-weight: 600;
+            letter-spacing: .16em; text-transform: uppercase; color: var(--hot); }
+
+/* ---------- figures ---------- */
+.figs { display: grid; gap: 2.5rem; grid-template-columns: repeat(auto-fit, minmax(14rem,1fr));
+        margin-bottom: 4.5rem; }
+.fig { border-top: 2px solid currentColor; padding-top: 1.25rem; }
+.fig b { display: block; font-family: var(--serif); font-size: clamp(3rem,5vw,4.5rem);
+         font-weight: 500; line-height: .95; letter-spacing: -.03em; }
+.hail h2 { max-width: 18ch; }
+.hail .links { display: flex; flex-wrap: wrap; gap: 1.75rem; margin-top: 2.25rem;
+               font-size: .75rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.hail .links a { color: var(--hot); text-decoration: none; }
+.hail .links a:hover { text-decoration: underline; }
+
+footer { padding: 3rem 0 4rem; border-top: 1px solid var(--rule); }
+footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+/* ---------- reveals: a wipe, not a fade. Editorial wants an edge. ---------- */
+@keyframes wipe {
+  from { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateY(14px); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0);    transform: none; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { animation: wipe linear both; animation-timeline: view();
+              animation-range: entry 0% cover 32%; }
+  }
+}
+/* Above-the-fold content must NOT be scroll-linked. An element already in
+   view at load sits at whatever progress its range maps to, so it paints
+   half-finished and stays that way until the user scrolls - which is exactly
+   what clipped this hero's lede before. */
+@media (prefers-reduced-motion: no-preference) {
+  .intro { animation: wipe .85s var(--ease) both; }
+  .intro:nth-of-type(2) { animation-delay: .08s; }
+  .intro:nth-of-type(3) { animation-delay: .16s; }
+}
+</style>
+</head>
+<body>
+
+<header id="hd">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <!-- Mark: the Ö of Özer, drawn as a true Didone - the ring is thick on
+           the verticals and thin across the top and bottom, which is the same
+           stress the display face uses. His own name carries the two-node
+           motif, so nothing has to be borrowed to get it. -->
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#14140f" fill-rule="evenodd"
+              d="M4.6 15 a7.4 7.4 0 1 0 14.8 0 a7.4 7.4 0 1 0 -14.8 0 Z
+                 M7.7 15 a4.3 5.9 0 1 0 8.6 0 a4.3 5.9 0 1 0 -8.6 0 Z"/>
+        <circle cx="8.7" cy="3.6" r="1.75" fill="#d8452a"/>
+        <circle cx="15.3" cy="3.6" r="1.75" fill="#14140f"/>
+      </svg>
+      <span class="wm">Alp &Ouml;zer</span>
+    </a>
+    <nav>
+      <a href="#work">Work</a><a href="#run">Exhibit</a><a href="#stack">Stack</a>
+      <a href="#method">Method</a><a href="#journey">Journey</a><a href="#writing">Writing</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero wrap">
+  <p class="kicker intro">AI Engineer &mdash; M&uuml;nchen</p>
+  <h1 class="intro" style="margin-top:1.5rem">Agents that can <em>prove</em> they worked.</h1>
+  <div class="hero-under intro">
+    <p class="lede" style="margin:0">Retrieval pipelines, autonomous agents, and the evaluation
+       harnesses that show what they actually do. Built by hand, so every part of them is
+       mine to measure.</p>
+    <div class="hero-meta">
+      <div><span>Now</span><span>Sage, Advocate</span></div>
+      <div><span>Before</span><span>Flexus, 2023&ndash;2026</span></div>
+      <div><span>Next</span><span>MSc TUM, October</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="work">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <p class="kicker">Selected work</p>
+      <h2>Six systems, and what each one cost.</h2>
+      <hr>
+    </div>
+    <div class="plates reveal" id="plates"></div>
+  </div>
+</section>
+
+<!-- The set piece. A figure in the outer column, changing as the copy runs past. -->
+<section class="band band--tint" id="run">
+  <div class="wrap">
+    <div class="band-head">
+      <p class="kicker">Exhibit &mdash; one cycle</p>
+      <h2>Six stages. The model owns one.</h2>
+      <hr>
+    </div>
+    <div class="run-grid">
+      <div class="ex-hold">
+        <figure class="ex" id="ex" style="margin:0">
+          <span class="ex-num" id="exNum">01</span>
+          <span class="ex-name" id="exName">Scrape</span>
+          <span class="ex-mode" id="exMode">Deterministic</span>
+          <div class="ex-index" id="exIndex"></div>
+          <figcaption class="small" style="margin-top:1.25rem">
+            Munich Apartment Agent &mdash; one cycle, every three hours, on a systemd timer.
+          </figcaption>
+        </figure>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+  </div>
+</section>
+
+<section class="band band--dark" id="stack">
+  <div class="wrap stack-grid">
+    <div class="stack-aside">
+      <p class="kicker">Index</p>
+      <h2 style="margin-top:.75rem">The stack</h2>
+      <p class="readout" id="readout">Select a technology to see where it is actually used.</p>
+    </div>
+    <div>
+      <div class="field" id="chips"></div>
+      <div class="legend"><span>Solid &mdash; shipped with</span><span>Dashed &mdash; explored</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="method">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <p class="kicker">How I work</p>
+      <h2>Method, not inventory.</h2>
+      <hr>
+    </div>
+    <div class="method reveal">
+      <div class="mth">
+        <span class="n">01</span>
+        <h3>A knowledge base per repo</h3>
+        <p>Every project I keep carries a context pack: decisions with the alternatives I
+           rejected, the gotchas that cost me a day, and an honest current status. It is
+           written to be read cold by a model. The test is whether a fresh session resumes
+           from the conclusion instead of the transcript.</p>
+      </div>
+      <div class="mth">
+        <span class="n">02</span>
+        <h3>Obsidian is the room I argue in</h3>
+        <p>Notes are not storage. They are where a half-formed idea gets taken apart before
+           it costs anything. What survives the argument gets promoted into a repository's
+           context pack; the rest stays a note, which is the correct outcome for most ideas.</p>
+      </div>
+      <div class="mth">
+        <span class="n">03</span>
+        <h3>Retrieval, because it is falsifiable</h3>
+        <p>Generation quality is largely a matter of taste, and taste does not survive a
+           disagreement. Retrieval quality is a number on a golden set, and it either went
+           up or it did not. That is the part of an LLM system where I can still be provably
+           wrong, so it is the part I went at first.</p>
+      </div>
+      <div class="mth">
+        <span class="n">04</span>
+        <h3>Sixteen weeks, ending in repositories</h3>
+        <p>LLM applications, retrieval, agents, evaluation, fine-tuning &mdash; structured like
+           a syllabus rather than a reading list. Every block ends in a shipped repository
+           rather than a certificate, which is why Sage, Voice Scheduler and the Munich agent
+           all exist. Currently on the last block.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band band--tint" id="journey">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <p class="kicker">Journey</p>
+      <h2>Ankara to M&uuml;nchen, the long way.</h2>
+      <hr>
+    </div>
+    <div class="jr">
+      <nav class="jr-rail" id="jrRail" aria-label="Timeline"></nav>
+      <ol class="jr-list" id="jrList"></ol>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="writing">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <p class="kicker">Writing</p>
+      <h2>Notes with a number attached.</h2>
+      <hr>
+    </div>
+    <a class="post reveal" href="#">
+      <span class="when">10 August 2026 &mdash; RAG, evaluation, retrieval</span>
+      <h2 style="margin-top:.75rem">Your RAG has no baseline</h2>
+      <p>Most retrieval &ldquo;improvements&rdquo; are unfalsifiable. What it takes to build a
+         golden set small enough to hand-label and honest enough to trust.</p>
+      <span class="go">Read it &rarr;</span>
+    </a>
+  </div>
+</section>
+
+<section class="band band--dark">
+  <div class="wrap">
+    <div class="band-head reveal"><p class="kicker">By the numbers</p><hr></div>
+    <div class="figs reveal">
+      <div class="fig"><b>185</b><p class="small">pages indexed by hand for Sage, from a 1,418-URL sitemap.</p></div>
+      <div class="fig"><b>0.948</b><p class="small">faithfulness on a hand-labelled golden set of 36 triples.</p></div>
+      <div class="fig"><b>3h</b><p class="small">timer driving the Munich agent, unattended, on a home server.</p></div>
+    </div>
+    <div class="hail reveal">
+      <h2>If you are hiring for this, I would like to hear from you.</h2>
+      <div class="links">
+        <a href="mailto:hello@alpozer.dev">hello@alpozer.dev</a>
+        <a href="https://github.com/AliAlpOezer">GitHub</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="small">&copy; 2026 Ali Alp &Ouml;zer</span>
+    <span class="small">Prototype E &mdash; Broadsheet</span>
+  </div>
+</footer>
+
+<script type="module">
+const PROJECTS = [
+  { id:'advocate', title:'Advocate', status:'building',
+    line:'Every component I trusted to tell me it had worked eventually lied about it.',
+    stack:['LangGraph','Python','Postgres','pgvector','Pydantic','Telegram'] },
+  { id:'munich', title:'Munich Apartment Agent', status:'live',
+    line:'The part I got right was deciding which parts the model is not allowed to touch.',
+    stack:['LangGraph','Python','SQLite','FastAPI','systemd','curl-cffi'] },
+  { id:'sage', title:'Sage', status:'building',
+    line:'Building retrieval by hand, so that every part of it could be measured.',
+    stack:['Python','Qdrant','RAGAS','FastAPI','OpenRouter','Cohere'] },
+  { id:'voice', title:'Voice Scheduler', status:'shipped',
+    line:'In a voice interface, latency is not a performance metric. It is the product.',
+    stack:['TypeScript','Vercel AI SDK','MCP','Whisper','ElevenLabs','Drizzle','SQLite'] },
+  { id:'atlas', title:'Atlas', status:'shipped',
+    line:'Two agent loops that do different jobs, kept deliberately apart.',
+    stack:['Next.js','TypeScript','Vercel AI SDK','Anthropic','OpenRouter'] },
+  { id:'ytmcp', title:'YouTube MCP Server', status:'shipped',
+    line:'Structure the input and the output improves without touching the model.',
+    stack:['Python','MCP','yt-dlp'] },
+];
+const EXPLORED = ['LangChain','llama.cpp','PyTorch','Transformers','ESP32','Kolibri',
+                  'Docker','React','Obsidian','Cloudflare','LiteLLM'];
+
+const PIPE = [
+  { t:'Scrape',  mode:'Deterministic',
+    d:'A plain HTTP client gets refused, so the fetch layer presents a real browser TLS fingerprint. This is the only stage whose job is to be indistinguishable from a person.' },
+  { t:'Filter',  mode:'Deterministic',
+    d:'Hard criteria first, in code: rent ceiling, rooms, district. Cheap, total, and it means the model never spends a token on a listing that already failed a rule.' },
+  { t:'Dedup',   mode:'Deterministic',
+    d:'The same flat is posted to three portals under three different IDs. Keyed on the attributes that do not change between listings, then written once.' },
+  { t:'Enrich',  mode:'Model',
+    d:'The one stage the model owns. Free-text descriptions carry what the structured fields never do, and reading prose is the thing a language model is actually better at than I am.' },
+  { t:'Persist', mode:'Deterministic',
+    d:'Local SQLite. Supabase was in here and was removed on purpose: a hosted database for a single-user agent bought nothing and cost a network hop on every cycle.' },
+  { t:'Notify',  mode:'Deterministic',
+    d:'A message per new match, and a heartbeat on every cycle whether or not there is anything to say. Without the heartbeat, a silent agent and a dead agent look identical.' },
+];
+
+const JOURNEY = [
+  { year:'2017', when:'2017 – 2020', title:'Before Germany', org:'ODTÜ, Ankara · İTÜ, Istanbul',
+    body:'Admitted to Turkey&rsquo;s most selective state technical university through the national entrance exam, in the top 0.15% nationally. Then economics in Istanbul: markets and ethics, Rawls and Kant and Amartya Sen.' },
+  { year:'2021', when:'2021 – 2024', title:'BSc Wirtschaftsinformatik', org:'Universität Würzburg',
+    body:'Arrived on an Erasmus year at B2 German and reached C2 within twelve months, then took an entire Bachelor&rsquo;s degree in that language. The thesis was a dynamic vehicle routing simulation whose look-ahead heuristic beat a greedy baseline by roughly 10% at no cost in solution quality.' },
+  { year:'2023', when:'2023 – 2026', title:'Software Developer & Technical PM', org:'Flexus AG',
+    body:'Backend architecture in SAP CAP, data models and query APIs across HANA and Postgres, and the routing and optimisation logic for an intralogistics hybrid fleet manager &mdash; an application recognised with the international SAP Innovation Award. I also owned the cockpit users actually live in.' },
+  { year:'06/26', when:'June 2026 – present', title:'Self-directed AI engineering program', org:'Built in public',
+    body:'Sixteen weeks, structured like a syllabus: LLM applications, retrieval, agents, evaluation, fine-tuning. Every block ends in a shipped repository rather than a certificate. Currently on the last block.' },
+  { year:'10/26', when:'From October 2026', title:'MSc Wirtschaftsinformatik', org:'Technical University of Munich',
+    body:'Enrolled for the winter semester, to push the formal side of what I have been teaching myself: the mathematics under the models rather than the APIs on top of them.' },
+];
+
+const shipped = [...new Set(PROJECTS.flatMap(p => p.stack))].sort((a,b)=>a.localeCompare(b));
+const STACK = [...shipped.map(n => ({name:n, tier:'shipped'})),
+               ...EXPLORED.map(n => ({name:n, tier:'explored'}))];
+
+const plates = document.getElementById('plates');
+plates.innerHTML = PROJECTS.map((p,i) => `
+  <article class="plate" data-id="${p.id}">
+    <span class="num">${String(i+1).padStart(2,'0')}</span>
+    <h3>${p.title}</h3>
+    <p>${p.line}</p>
+    <span class="st" data-s="${p.status}">${p.status}</span>
+    <span class="tk">${p.stack.map(t=>`<span data-t="${t}">${t}</span>`).join('')}</span>
+  </article>`).join('');
+
+const chips = document.getElementById('chips');
+chips.innerHTML = STACK.map(s => `
+  <button class="chip" type="button" aria-pressed="false"
+          data-t="${s.name}" data-tier="${s.tier}">${s.name}</button>`).join('');
+
+/* --- the exhibit -------------------------------------------------------- */
+document.getElementById('exIndex').innerHTML = PIPE.map((s,i) => `
+  <div data-i="${i}"><span class="n">${String(i+1).padStart(2,'0')}</span><span>${s.t}</span></div>`).join('');
+
+const stepsEl = document.getElementById('steps');
+stepsEl.innerHTML = PIPE.map((s,i) => `
+  <div class="step" data-i="${i}">
+    <div class="step-in" data-i="${i}">
+      <p class="kicker">Stage ${String(i+1).padStart(2,'0')} &mdash; ${s.mode}</p>
+      <h2>${s.t}</h2>
+      <p>${s.d}</p>
+    </div>
+  </div>`).join('');
+
+const ex = document.getElementById('ex');
+const exNum = document.getElementById('exNum');
+const exName = document.getElementById('exName');
+const exMode = document.getElementById('exMode');
+const exRows = [...document.querySelectorAll('.ex-index div')];
+const stepEls = [...document.querySelectorAll('.step')];
+let current = -1;
+
+function setRun(i) {
+  if (i === current) return;
+  current = i;
+  exNum.textContent = String(i + 1).padStart(2, '0');
+  exName.textContent = PIPE[i].t;
+  exMode.textContent = PIPE[i].mode;
+  exRows.forEach((r,j) => { r.dataset.on = String(j === i); r.dataset.past = String(j < i); });
+  stepEls.forEach((s,j) => { s.dataset.on = String(j === i); });
+  /* Restart the entry animation on every change: the numeral is the whole
+     effect, so it has to re-enter rather than swap in place. */
+  ex.classList.remove('flip');
+  void ex.offsetWidth;
+  ex.classList.add('flip');
+}
+stepsEl.dataset.live = 'true';
+setRun(0);
+
+/* Nearest-copy-block-to-centre, not an IntersectionObserver.
+   An observer against a detection line leaves gaps: between two copy blocks
+   nothing intersects, so arriving mid-section by anchor link, by reload with a
+   restored scroll position, or by any discontinuous jump leaves the plate
+   showing whatever it showed last. Measuring six rects on a throttled passive
+   scroll is cheap, has no gaps, and hands over exactly at the midpoint. */
+const stepIns = [...document.querySelectorAll('.step-in')];
+let runTick = false;
+function syncRun() {
+  runTick = false;
+  const mid = window.innerHeight / 2;
+  let best = 0, bestD = Infinity;
+  stepIns.forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const d = Math.abs(r.top + r.height / 2 - mid);
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  setRun(best);
+}
+addEventListener('scroll', () => {
+  if (!runTick) { runTick = true; requestAnimationFrame(syncRun); }
+}, { passive: true });
+addEventListener('resize', syncRun);
+syncRun();
+
+/* --- journey rail ------------------------------------------------------- */
+document.getElementById('jrList').innerHTML = JOURNEY.map((j,i) => `
+  <li class="jr-item" id="jr-${i}" data-i="${i}">
+    <span class="jr-when">${j.when}</span>
+    <h3>${j.title}</h3>
+    <p class="jr-org">${j.org}</p>
+    <p>${j.body}</p>
+  </li>`).join('');
+document.getElementById('jrRail').innerHTML = JOURNEY.map((j,i) =>
+  `<a href="#jr-${i}" data-i="${i}">${j.year}</a>`).join('');
+
+const jrLinks = [...document.querySelectorAll('.jr-rail a')];
+jrLinks[0].dataset.on = 'true';
+const jrIO = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) {
+    const i = Number(e.target.dataset.i);
+    jrLinks.forEach((a,j) => { a.dataset.on = String(j === i); });
+  }
+}, { rootMargin: '-45% 0px -45% 0px' });
+document.querySelectorAll('.jr-item').forEach(el => jrIO.observe(el));
+
+/* --- pointer spotlight -------------------------------------------------- */
+plates.addEventListener('pointermove', e => {
+  const plate = e.target.closest('.plate');
+  if (!plate) return;
+  const r = plate.getBoundingClientRect();
+  plate.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+  plate.style.setProperty('--my', (e.clientY - r.top) + 'px');
+});
+
+/* --- stack filter ------------------------------------------------------- */
+const readout = document.getElementById('readout');
+let active = null;
+
+chips.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const name = chip.dataset.t;
+  active = active === name ? null : name;
+
+  chips.dataset.filtering = active ? 'true' : 'false';
+  for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.t === active));
+
+  const users = PROJECTS.filter(p => p.stack.includes(active));
+  for (const plate of plates.children) {
+    plate.dataset.dim = String(Boolean(active) && !users.some(u => u.id === plate.dataset.id));
+    for (const t of plate.querySelectorAll('.tk span')) t.dataset.hit = String(t.dataset.t === active);
+  }
+
+  if (!active) {
+    readout.textContent = 'Select a technology to see where it is actually used.';
+  } else if (users.length) {
+    readout.innerHTML = `<b>${active}</b>Ships in ${users.length}
+      project${users.length>1?'s':''} &mdash; ${users.map(u=>u.title).join(', ')}.`;
+  } else {
+    readout.innerHTML = `<b>${active}</b>Explored, not yet shipped in anything public.`;
+  }
+});
+
+/* --- masthead --------------------------------------------------------- */
+const hd = document.getElementById('hd');
+new IntersectionObserver(([e]) => hd.classList.toggle('stuck', !e.isIntersecting),
+  { rootMargin: '-59px 0px 0px 0px' }).observe(document.querySelector('.hero'));
+
+/* A 1px observation line at the masthead's midpoint; whichever black band
+   crosses it owns the bar. Rebuilt on resize, since the bottom margin is
+   expressed against the viewport height. */
+const darkBands = [...document.querySelectorAll('.band--dark')];
+let polarityIO;
+function watchPolarity() {
+  polarityIO?.disconnect();
+  polarityIO = new IntersectionObserver(entries => {
+    for (const e of entries) e.target.dataset.underBar = String(e.isIntersecting);
+    hd.classList.toggle('on-dark', darkBands.some(b => b.dataset.underBar === 'true'));
+  }, { rootMargin: `-29px 0px ${-(window.innerHeight - 30)}px 0px` });
+  darkBands.forEach(b => polarityIO.observe(b));
+}
+watchPolarity();
+let resizeT;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(watchPolarity, 150); });
+</script>
+</body>
+</html>

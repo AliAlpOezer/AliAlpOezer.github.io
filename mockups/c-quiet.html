@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en" data-proto="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C - Quiet</title>
+<link rel="stylesheet" href="./fonts.css">
+<style>
+/* ============================================================
+   C - QUIET.  Apple lineage: deference, one accent, no gradients.
+   Rhythm comes from full-bleed section flips, not decoration.
+   The colour change between sections IS the divider.
+   Single family (Instrument Sans) at two optical registers, the
+   way SF Pro Display / SF Pro Text works.
+   ============================================================ */
+:root {
+  --canvas:      #ffffff;
+  --parchment:   #f5f5f7;
+  --tile:        #1d1d1f;
+  --ink:         #1d1d1f;
+  --ink-muted:   #6e6e73;
+  --ink-faint:   #a1a1a6;
+  --on-tile:     #f5f5f7;
+  --on-tile-mute:#a1a1a6;
+  --hairline:    #d2d2d7;
+  --hairline-dk: #3a3a3c;
+  --accent:      #0066cc;
+  --accent-lift: #2997ff;
+  --green:       #30d158;
+
+  --shadow-product: rgba(0,0,0,.22) 3px 5px 30px 0;
+
+  --page:    1120px;
+  --measure: 46rem;
+  --gutter:  clamp(1.25rem, 5vw, 2.5rem);
+  --section: clamp(5rem, 11vh, 7.5rem);
+
+  --ease: cubic-bezier(.22,.68,.24,1);
+
+  font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -.011em;
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+[id] { scroll-margin-top: 4.5rem; }
+
+.wrap { max-width: var(--page); margin-inline: auto; padding-inline: var(--gutter); }
+
+/* Tracking tightens as size grows. This is the whole identity. */
+h1, h2, h3 { margin: 0; font-weight: 600; }
+h1 { font-size: clamp(2.75rem, 8.5vw, 6.75rem); line-height: 1.03; letter-spacing: -.042em; }
+h2 { font-size: clamp(1.9rem, 3.6vw, 3.1rem); line-height: 1.08; letter-spacing: -.03em; }
+h3 { font-size: 1.3125rem; line-height: 1.19; letter-spacing: -.02em; }
+
+.lede { font-size: clamp(1.1875rem, 1.7vw, 1.625rem); line-height: 1.38;
+        letter-spacing: -.019em; color: var(--ink-muted); max-width: var(--measure); }
+.eyebrow { font-size: .8125rem; font-weight: 600; letter-spacing: .02em;
+           color: var(--accent); margin: 0 0 1.25rem; }
+.small { font-size: .875rem; letter-spacing: -.014em; color: var(--ink-muted); }
+
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; border-radius: 4px; }
+
+/* ---------- header: 44px targets, frosted on scroll ---------- */
+header {
+  position: sticky; top: 0; z-index: 50; height: 52px;
+  display: flex; align-items: center;
+  background: color-mix(in oklab, var(--canvas) 72%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s var(--ease);
+}
+header.stuck { border-bottom-color: var(--hairline); }
+/* A frosted white bar sitting over a full-bleed dark section reads as a broken
+   overlay, and this design flips background colour four times. The bar adapts
+   instead: same deference, opposite polarity. */
+header { transition: border-color .3s var(--ease), background-color .4s var(--ease); }
+header.on-dark { background: color-mix(in oklab, var(--tile) 68%, transparent); color: var(--on-tile); }
+header.on-dark nav a { color: var(--on-tile-mute); }
+header.on-dark nav a:hover { color: var(--on-tile); }
+header.on-dark.stuck { border-bottom-color: var(--hairline-dk); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.brand { display: flex; align-items: center; gap: .625rem; text-decoration: none;
+         font-weight: 600; letter-spacing: -.02em; }
+.brand svg { display: block; }
+nav { display: flex; gap: 1.75rem; }
+nav a { font-size: .8125rem; color: var(--ink-muted); text-decoration: none;
+        transition: color .2s var(--ease); }
+nav a:hover { color: var(--ink); }
+@media (max-width: 40rem) { nav { gap: 1.125rem; } nav a:nth-child(n+4) { display: none; } }
+
+/* ---------- hero ---------- */
+.hero { padding: clamp(4.5rem, 14vh, 9rem) 0 var(--section); }
+.hero h1 { max-width: 15ch; }
+.hero .lede { margin: 2rem 0 0; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 2.5rem; }
+.hero-meta span { font-size: .875rem; color: var(--ink-faint); letter-spacing: -.014em; }
+
+/* ---------- section flip: the divider is the colour ---------- */
+.band { padding: var(--section) 0; }
+.band--tile { background: var(--tile); color: var(--on-tile); }
+.band--tile .small, .band--tile .lede { color: var(--on-tile-mute); }
+.band--tile .eyebrow { color: var(--accent-lift); }
+.band--parchment { background: var(--parchment); }
+
+.band-head { display: flex; align-items: baseline; justify-content: space-between;
+             gap: 1.5rem; margin-bottom: 3rem; flex-wrap: wrap; }
+.band-head a { font-size: .875rem; color: var(--accent); text-decoration: none; }
+.band--tile .band-head a { color: var(--accent-lift); }
+.band-head a:hover { text-decoration: underline; }
+
+/* ---------- work grid + pointer spotlight ---------- */
+.grid {
+  display: grid; gap: 1px; background: var(--hairline);
+  border: 1px solid var(--hairline); border-radius: 18px; overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  isolation: isolate;
+}
+.card {
+  position: relative; background: var(--canvas); padding: 2rem 1.75rem 1.75rem;
+  display: flex; flex-direction: column; min-height: 15rem;
+  transition: opacity .35s var(--ease);
+}
+/* The one effect carried over from b-atmospheric, at lower intensity and
+   achromatic so it reads as light rather than as glow. */
+.card::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0; transition: opacity .4s var(--ease);
+  background: radial-gradient(16rem 16rem at var(--mx) var(--my),
+              rgba(0,102,204,.07), transparent 68%);
+}
+.grid:hover .card::before { opacity: 1; }
+.card > * { position: relative; z-index: 1; }
+.card[data-dim="true"] { opacity: .26; }
+
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.status { font-size: .6875rem; font-weight: 600; letter-spacing: .06em;
+          text-transform: uppercase; color: var(--ink-faint); }
+.status[data-s="live"] { color: #1d7f4a; }
+.card p { margin: .75rem 0 0; color: var(--ink-muted); font-size: .9375rem; line-height: 1.5; }
+.card .tags { margin-top: auto; padding-top: 1.5rem; display: flex; flex-wrap: wrap; gap: .375rem; }
+.tag { font-size: .6875rem; letter-spacing: -.005em; color: var(--ink-muted);
+       border: 1px solid var(--hairline); border-radius: 9999px; padding: .1875rem .5rem;
+       transition: border-color .25s var(--ease), color .25s var(--ease); }
+.tag[data-hit="true"] { border-color: var(--accent); color: var(--accent); }
+
+/* ============================================================
+   Signature set piece: the pinned run.
+   Apple's move is a sticky stage whose visual advances while the
+   copy scrolls past it. A native scroll timeline cannot drive one
+   shared stage from six sibling ranges without `timeline-scope`,
+   which is not portable yet - so this is the single place that
+   uses an observer. With JS off, every step still reads as prose
+   and the panel sits at rest showing all six stages: invariant 3
+   is satisfied, not waived.
+   ============================================================ */
+.run-grid { display: grid; gap: 3rem; align-items: start; }
+@media (min-width: 62rem) {
+  .run-grid { grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); gap: 5rem; }
+}
+/* The panel centres in the pinned viewport so it sits level with whichever
+   step is currently active, rather than riding the top edge. */
+.panel-hold { margin-bottom: 2.5rem; }
+@media (min-width: 62rem) {
+  .panel-hold { position: sticky; top: 4.5rem; height: calc(100vh - 4.5rem);
+                display: flex; align-items: center; margin-bottom: 0; }
+  .panel-hold > .panel { width: 100%; }
+}
+.panel {
+  border: 1px solid var(--hairline-dk); border-radius: 16px;
+  background: #000; overflow: hidden; box-shadow: var(--shadow-product);
+}
+.panel-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .8125rem 1.125rem; border-bottom: 1px solid var(--hairline-dk);
+  font-size: .75rem; color: var(--on-tile-mute); letter-spacing: -.006em;
+}
+.dot { display: inline-block; width: .4375rem; height: .4375rem; border-radius: 50%;
+       background: var(--green); margin-right: .4375rem; vertical-align: middle; }
+@media (prefers-reduced-motion: no-preference) {
+  .dot { animation: pulse 2.6s ease-in-out infinite; }
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+.rail { padding: .875rem 0; --bx: 4.0625rem; }
+.node {
+  position: relative; display: grid; align-items: center; column-gap: .875rem;
+  grid-template-columns: 1.75rem .625rem minmax(0,1fr) auto;
+  padding: .625rem 1.125rem;
+}
+.node .idx { font-size: .75rem; color: #545458; font-variant-numeric: tabular-nums; }
+.node .bul { width: .625rem; height: .625rem; border-radius: 50%;
+             border: 1px solid #48484a; background: #000; z-index: 1;
+             transition: background .4s var(--ease), border-color .4s var(--ease),
+                         box-shadow .4s var(--ease); }
+.node .nm { font-size: .9375rem; color: var(--on-tile-mute); letter-spacing: -.012em;
+            transition: color .4s var(--ease); }
+.node .md { font-size: .625rem; font-weight: 600; letter-spacing: .06em;
+            text-transform: uppercase; color: #545458; border: 1px solid #38383a;
+            border-radius: 9999px; padding: .125rem .4375rem;
+            transition: color .4s var(--ease), border-color .4s var(--ease); }
+/* Connector: spans exactly one row, from the previous bullet centre to this one. */
+.node + .node::before {
+  content: ""; position: absolute; left: var(--bx); top: -50%; height: 100%; width: 1px;
+  background: #38383a; transition: background .4s var(--ease);
+}
+.node[data-past="true"]::before { background: var(--accent-lift); }
+.node[data-past="true"] .bul { background: var(--accent-lift); border-color: var(--accent-lift); }
+.node[data-on="true"] .bul { background: var(--accent-lift); border-color: var(--accent-lift);
+                             box-shadow: 0 0 0 4px rgba(41,151,255,.2); }
+.node[data-on="true"] .nm { color: #fff; }
+.node[data-on="true"] .md { color: var(--accent-lift); border-color: var(--accent-lift); }
+.panel-foot { padding: .8125rem 1.125rem; border-top: 1px solid var(--hairline-dk);
+              font-size: .75rem; color: #545458; display: flex; justify-content: space-between;
+              gap: 1rem; flex-wrap: wrap; }
+
+/* Bottom padding keeps the pinned panel in view through the final stage:
+   without it the sticky element bottoms out against the container while the
+   last step is still being read, and the panel scrolls half out of frame. */
+.steps { display: grid; padding-bottom: 14vh; }
+.step {
+  min-height: 60vh; display: flex; flex-direction: column; justify-content: center;
+  padding: 2rem 0; opacity: 1; transition: opacity .45s var(--ease);
+}
+/* `.step p` outranks a bare `.eyebrow`, which was repainting the stage
+   label muted grey. Same class-vs-element trap as the journey org line. */
+.step .eyebrow { margin-bottom: .75rem; color: var(--accent-lift); }
+.step p { margin: 1rem 0 0; max-width: 34rem; color: var(--on-tile-mute);
+          font-size: 1.0625rem; line-height: 1.55; }
+/* Only dim once the observer is live, so a JS-less page keeps all six legible. */
+.steps[data-live="true"] .step { opacity: .3; }
+.steps[data-live="true"] .step[data-on="true"] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .steps[data-live="true"] .step { opacity: 1; } }
+
+/* ---------- stack: the interactive centrepiece ---------- */
+.stack-wrap { display: grid; grid-template-columns: minmax(0,1fr); gap: 2.5rem; }
+@media (min-width: 60rem) { .stack-wrap { grid-template-columns: 17rem minmax(0,1fr); gap: 4rem; } }
+.stack-aside { position: sticky; top: 5rem; align-self: start; }
+.stack-aside h2 { margin-bottom: 1rem; }
+.stack-readout { font-size: .9375rem; color: var(--ink-muted); min-height: 5rem; }
+.stack-readout b { color: var(--ink); font-weight: 600; }
+
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip {
+  font: inherit; font-size: .875rem; letter-spacing: -.014em; cursor: pointer;
+  background: transparent; color: var(--ink-muted);
+  border: 1px solid var(--hairline); border-radius: 9999px;
+  padding: .4375rem .8125rem; min-height: 34px;
+  transition: color .25s var(--ease), border-color .25s var(--ease),
+              background .25s var(--ease), opacity .25s var(--ease);
+}
+.chip:hover { color: var(--ink); border-color: var(--ink-faint); }
+.chip[data-tier="explored"] { border-style: dashed; color: var(--ink-faint); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent);
+                             color: #fff; font-weight: 600; }
+.chips[data-filtering="true"] .chip:not([aria-pressed="true"]) { opacity: .32; }
+.chip-legend { display: flex; gap: 1.25rem; margin-top: 1.75rem; font-size: .8125rem;
+               color: var(--ink-muted); }
+.chip-legend i { display: inline-block; width: 1.5rem; border-top: 1px solid currentColor;
+                 vertical-align: middle; margin-right: .5rem; }
+.chip-legend i.dashed { border-top-style: dashed; }
+
+/* ---------- method: four cards, same spotlight, no chrome ---------- */
+/* Exactly four entries, so the grid is 2x2 rather than auto-fit. auto-fit left
+   two empty cells at 1440px and the 1px hairline background showed through them
+   as a grey block. A grid whose cell count is known should be stated, not inferred. */
+.method { display: grid; gap: 1px; background: var(--hairline);
+          border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
+          grid-template-columns: minmax(0, 1fr); isolation: isolate; }
+@media (min-width: 52rem) { .method { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mth { position: relative; background: var(--canvas); padding: 2.25rem 1.75rem 2rem; }
+.mth::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0;
+  transition: opacity .4s var(--ease);
+  background: radial-gradient(15rem 15rem at var(--mx) var(--my),
+              rgba(0,102,204,.06), transparent 68%);
+}
+.method:hover .mth::before { opacity: 1; }
+.mth > * { position: relative; z-index: 1; }
+.mth .n { display: block; font-size: .75rem; color: var(--ink-faint);
+          font-variant-numeric: tabular-nums; margin-bottom: 1.25rem; }
+.mth p { margin: .875rem 0 0; color: var(--ink-muted); font-size: .9375rem; line-height: 1.55; }
+
+/* ---------- journey: the sticky rail, taken from the reference site ---------- */
+.jr { display: grid; gap: 2.5rem; }
+@media (min-width: 58rem) { .jr { grid-template-columns: 13rem minmax(0,1fr); gap: 4.5rem; } }
+.jr-rail { position: sticky; top: 5rem; align-self: start; display: flex;
+           flex-direction: column; gap: .125rem; }
+.jr-rail a { display: block; padding: .375rem 0 .375rem .875rem; font-size: .8125rem;
+             color: var(--ink-faint); text-decoration: none; border-left: 2px solid var(--hairline);
+             font-variant-numeric: tabular-nums;
+             transition: color .3s var(--ease), border-color .3s var(--ease); }
+.jr-rail a[data-on="true"] { color: var(--ink); border-left-color: var(--accent); }
+.jr-list { list-style: none; margin: 0; padding: 0; }
+.jr-item { padding: 2.25rem 0; border-top: 1px solid var(--hairline); }
+.jr-item:first-child { border-top: 0; padding-top: 0; }
+.jr-when { font-size: .8125rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.jr-item h3 { margin-top: .5rem; }
+.jr-item p { margin: .875rem 0 0; color: var(--ink-muted); font-size: .9375rem;
+             line-height: 1.55; max-width: 40rem; }
+/* Needs the extra class: `.jr-item p` outranks a bare `.jr-org` and was
+   silently repainting the organisation line muted grey. */
+.jr-item .jr-org { font-size: .9375rem; color: var(--accent); margin: .25rem 0 0; }
+
+/* ---------- writing ---------- */
+.post { display: block; text-decoration: none; border-top: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--hairline); padding: 2.5rem 0;
+        transition: padding-left .35s var(--ease); }
+.post:hover { padding-left: .75rem; }
+.post h3 { font-size: clamp(1.5rem, 2.6vw, 2.125rem); letter-spacing: -.028em; }
+.post .when { font-size: .8125rem; color: var(--ink-faint); }
+.post p { margin: .75rem 0 0; color: var(--ink-muted); max-width: var(--measure); }
+.post .go { display: inline-block; margin-top: 1.25rem; font-size: .875rem; color: var(--accent); }
+
+/* ---------- closing ---------- */
+.close-grid { display: grid; gap: 2.5rem; grid-template-columns: repeat(auto-fit, minmax(15rem,1fr));
+              margin-bottom: 4.5rem; }
+.stat { border-top: 1px solid var(--hairline-dk); padding-top: 1.25rem; }
+.stat b { display: block; font-size: 2.25rem; font-weight: 600; letter-spacing: -.03em; }
+.hail h2 { max-width: 18ch; }
+.hail .links { display: flex; flex-wrap: wrap; gap: 1.75rem; margin-top: 2.25rem; }
+.hail .links a { font-size: 1.0625rem; color: var(--accent-lift); text-decoration: none; }
+.hail .links a:hover { text-decoration: underline; }
+
+footer { padding: 3rem 0 4rem; border-top: 1px solid var(--hairline); }
+footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+/* ---------- scroll-driven reveals: native CSS, zero JS ----------
+   Default state is visible. The animation only ever applies where the
+   timeline is supported AND motion is welcome, so invariants 3 and 5
+   are satisfied by construction rather than by a fallback path. */
+@keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { animation: rise linear both; animation-timeline: view();
+              animation-range: entry 0% cover 30%; }
+  }
+}
+/* Above-the-fold content must NOT be scroll-linked. An element already in
+   view at load sits at whatever progress its range maps to, so it paints
+   half-finished and stays that way until the user scrolls. Hero content gets
+   a time-based intro instead; only below-fold sections use view(). */
+@media (prefers-reduced-motion: no-preference) {
+  .intro { animation: rise .8s var(--ease) both; }
+  .intro:nth-of-type(2) { animation-delay: .06s; }
+  .intro:nth-of-type(3) { animation-delay: .12s; }
+  .intro:nth-of-type(4) { animation-delay: .18s; }
+}
+</style>
+</head>
+<body>
+
+<header id="hd">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <!-- Mark: an A assembled from four detached links, the apex carrying the
+           accent. Reads as a chain that gains height - the LangChain idea
+           (assembly, uplift) without borrowing its bird. The apex is a segment
+           rather than a floating dot, which at 22px was reading as a head. -->
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 20.6 L9.1 10.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M14.9 10.4 L20 20.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M8.7 16 H15.3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M10.2 8.4 L12 4.8 L13.8 8.4" stroke="#0066cc" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Alp Özer
+    </a>
+    <nav>
+      <a href="#work">Work</a><a href="#run">Anatomy</a><a href="#stack">Stack</a>
+      <a href="#method">Method</a><a href="#journey">Journey</a><a href="#writing">Writing</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero wrap">
+  <p class="eyebrow intro">AI Engineer &middot; München</p>
+  <h1 class="intro">Agents that can prove they worked.</h1>
+  <p class="lede intro">Retrieval pipelines, autonomous agents, and the evaluation
+     harnesses that show what they actually do. Built by hand, so every part of them
+     is mine to measure.</p>
+  <div class="hero-meta intro">
+    <span>Currently building Sage &amp; Advocate</span>
+    <span>Previously Flexus, 2023&ndash;2026</span>
+    <span>MSc Wirtschaftsinformatik, TUM, from October</span>
+  </div>
+</section>
+
+<section class="band" id="work">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <h2>Selected work</h2>
+      <a href="#">All projects &rarr;</a>
+    </div>
+    <div class="grid reveal" id="grid"></div>
+  </div>
+</section>
+
+<!-- The set piece. One system, opened up, stage by stage. -->
+<section class="band band--tile" id="run">
+  <div class="wrap">
+    <div class="band-head">
+      <div>
+        <p class="eyebrow">Anatomy of a run</p>
+        <h2>Six stages. The model owns one.</h2>
+      </div>
+    </div>
+    <div class="run-grid">
+      <div class="panel-hold">
+        <div class="panel">
+          <div class="panel-bar">
+            <span>munich-apartment-agent</span>
+            <span><i class="dot"></i>live</span>
+          </div>
+          <div class="rail" id="rail"></div>
+          <div class="panel-foot">
+            <span>cycle every 3h &middot; systemd timer</span>
+            <span>SQLite</span>
+          </div>
+        </div>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+  </div>
+</section>
+
+<section class="band band--parchment" id="stack">
+  <div class="wrap stack-wrap">
+    <div class="stack-aside">
+      <p class="eyebrow">Everything I have touched</p>
+      <h2>The stack</h2>
+      <p class="stack-readout" id="readout">
+        Select a technology to see where it is actually used.
+      </p>
+    </div>
+    <div>
+      <div class="chips" id="chips"></div>
+      <div class="chip-legend">
+        <span><i></i>shipped with</span>
+        <span><i class="dashed"></i>explored, not shipped</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="method">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <div>
+        <p class="eyebrow">How I work</p>
+        <h2>Method, not inventory.</h2>
+      </div>
+    </div>
+    <div class="method reveal" id="methodGrid">
+      <div class="mth">
+        <span class="n">01</span>
+        <h3>A knowledge base per repo</h3>
+        <p>Every project I keep carries a context pack: decisions with the alternatives
+           I rejected, the gotchas that cost me a day, and an honest current status. It
+           is written to be read cold by a model. The test is whether a fresh session
+           resumes from the conclusion instead of the transcript.</p>
+      </div>
+      <div class="mth">
+        <span class="n">02</span>
+        <h3>Obsidian is the room I argue in</h3>
+        <p>Notes are not storage. They are where a half-formed idea gets taken apart
+           before it costs anything. What survives the argument gets promoted into a
+           repository's context pack; the rest stays a note, which is the correct
+           outcome for most ideas.</p>
+      </div>
+      <div class="mth">
+        <span class="n">03</span>
+        <h3>Retrieval, because it is falsifiable</h3>
+        <p>Generation quality is largely a matter of taste, and taste does not survive
+           a disagreement. Retrieval quality is a number on a golden set, and it either
+           went up or it did not. That is the part of an LLM system where I can still
+           be provably wrong, so it is the part I went at first.</p>
+      </div>
+      <div class="mth">
+        <span class="n">04</span>
+        <h3>Sixteen weeks, ending in repositories</h3>
+        <p>LLM applications, retrieval, agents, evaluation, fine-tuning &mdash; structured
+           like a syllabus rather than a reading list. Every block ends in a shipped
+           repository rather than a certificate, which is why Sage, Voice Scheduler and
+           the Munich agent all exist. Currently on the last block.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band band--parchment" id="journey">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <div>
+        <p class="eyebrow">Journey</p>
+        <h2>Ankara to München, the long way.</h2>
+      </div>
+    </div>
+    <div class="jr">
+      <nav class="jr-rail" id="jrRail" aria-label="Timeline"></nav>
+      <ol class="jr-list" id="jrList"></ol>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="writing">
+  <div class="wrap">
+    <div class="band-head reveal">
+      <h2>Writing</h2>
+      <a href="#">All posts &rarr;</a>
+    </div>
+    <a class="post reveal" href="#">
+      <span class="when">10 August 2026 &middot; RAG, evaluation, retrieval</span>
+      <h3>Your RAG has no baseline</h3>
+      <p>Most retrieval &ldquo;improvements&rdquo; are unfalsifiable. What it takes to
+         build a golden set small enough to hand-label and honest enough to trust.</p>
+      <span class="go">Read it &rarr;</span>
+    </a>
+  </div>
+</section>
+
+<section class="band band--tile">
+  <div class="wrap">
+    <div class="close-grid reveal">
+      <div class="stat"><b>185</b><p class="small">pages indexed by hand for Sage, from a 1,418-URL sitemap.</p></div>
+      <div class="stat"><b>0.948</b><p class="small">faithfulness on a hand-labelled golden set of 36 triples.</p></div>
+      <div class="stat"><b>3h</b><p class="small">timer driving the Munich agent, unattended, on a home server.</p></div>
+    </div>
+    <div class="hail reveal">
+      <h2>If you are hiring for this, I would like to hear from you.</h2>
+      <div class="links">
+        <a href="mailto:hello@alpozer.dev">hello@alpozer.dev</a>
+        <a href="https://github.com/AliAlpOezer">GitHub</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="small">&copy; 2026 Ali Alp Özer</span>
+    <span class="small">Prototype C &mdash; Quiet</span>
+  </div>
+</footer>
+
+<script type="module">
+/* Shared prototype content. Real projects, real stacks, real numbers -
+   an identity decision made against placeholder copy is worthless. */
+const PROJECTS = [
+  { id:'advocate', title:'Advocate', status:'building',
+    line:'Every component I trusted to tell me it had worked eventually lied about it.',
+    stack:['LangGraph','Python','Postgres','pgvector','Pydantic','Telegram'] },
+  { id:'munich', title:'Munich Apartment Agent', status:'live',
+    line:'The part I got right was deciding which parts the model is not allowed to touch.',
+    stack:['LangGraph','Python','SQLite','FastAPI','systemd','curl-cffi'] },
+  { id:'sage', title:'Sage', status:'building',
+    line:'Building retrieval by hand, so that every part of it could be measured.',
+    stack:['Python','Qdrant','RAGAS','FastAPI','OpenRouter','Cohere'] },
+  { id:'voice', title:'Voice Scheduler', status:'shipped',
+    line:'In a voice interface, latency is not a performance metric. It is the product.',
+    stack:['TypeScript','Vercel AI SDK','MCP','Whisper','ElevenLabs','Drizzle','SQLite'] },
+  { id:'atlas', title:'Atlas', status:'shipped',
+    line:'Two agent loops that do different jobs, kept deliberately apart.',
+    stack:['Next.js','TypeScript','Vercel AI SDK','Anthropic','OpenRouter'] },
+  { id:'ytmcp', title:'YouTube MCP Server', status:'shipped',
+    line:'Structure the input and the output improves without touching the model.',
+    stack:['Python','MCP','yt-dlp'] },
+];
+
+/* "Has ever seen" is broader than "shipped with" - that scope was asked for
+   by name, so the explored tier is part of the data, not a decoration. */
+const EXPLORED = ['LangChain','llama.cpp','PyTorch','Transformers','ESP32','Kolibri',
+                  'Docker','React','Obsidian','Cloudflare','LiteLLM'];
+
+/* The set piece reads one real system end to end. Every line here is
+   sourced from that project's own decision record. */
+const PIPE = [
+  { t:'Scrape',  mode:'deterministic',
+    d:'A plain HTTP client gets refused, so the fetch layer presents a real browser TLS fingerprint. This is the only stage whose job is to be indistinguishable from a person.' },
+  { t:'Filter',  mode:'deterministic',
+    d:'Hard criteria first, in code: rent ceiling, rooms, district. Cheap, total, and it means the model never spends a token on a listing that already failed a rule.' },
+  { t:'Dedup',   mode:'deterministic',
+    d:'The same flat is posted to three portals under three different IDs. Keyed on the attributes that do not change between listings, then written once.' },
+  { t:'Enrich',  mode:'model',
+    d:'The one stage the model owns. Free-text descriptions carry what the structured fields never do, and reading prose is the thing a language model is actually better at than I am.' },
+  { t:'Persist', mode:'deterministic',
+    d:'Local SQLite. Supabase was in here and was removed on purpose: a hosted database for a single-user agent bought nothing and cost a network hop on every cycle.' },
+  { t:'Notify',  mode:'deterministic',
+    d:'A message per new match, and a heartbeat on every cycle whether or not there is anything to say. Without the heartbeat, a silent agent and a dead agent look identical.' },
+];
+
+const JOURNEY = [
+  { year:'2017', when:'2017 – 2020', title:'Before Germany', org:'ODTÜ, Ankara · İTÜ, Istanbul',
+    body:'Admitted to Turkey&rsquo;s most selective state technical university through the national entrance exam, in the top 0.15% nationally. Then economics in Istanbul: markets and ethics, Rawls and Kant and Amartya Sen.' },
+  { year:'2021', when:'2021 – 2024', title:'BSc Wirtschaftsinformatik', org:'Universität Würzburg',
+    body:'Arrived on an Erasmus year at B2 German and reached C2 within twelve months, then took an entire Bachelor&rsquo;s degree in that language. The thesis was a dynamic vehicle routing simulation whose look-ahead heuristic beat a greedy baseline by roughly 10% at no cost in solution quality.' },
+  { year:'2023', when:'2023 – 2026', title:'Software Developer & Technical PM', org:'Flexus AG',
+    body:'Backend architecture in SAP CAP, data models and query APIs across HANA and Postgres, and the routing and optimisation logic for an intralogistics hybrid fleet manager &mdash; an application recognised with the international SAP Innovation Award. I also owned the cockpit users actually live in.' },
+  { year:'06/26', when:'June 2026 – present', title:'Self-directed AI engineering program', org:'Built in public',
+    body:'Sixteen weeks, structured like a syllabus: LLM applications, retrieval, agents, evaluation, fine-tuning. Every block ends in a shipped repository rather than a certificate. Currently on the last block.' },
+  { year:'10/26', when:'From October 2026', title:'MSc Wirtschaftsinformatik', org:'Technical University of Munich',
+    body:'Enrolled for the winter semester, to push the formal side of what I have been teaching myself: the mathematics under the models rather than the APIs on top of them.' },
+];
+
+const shipped = [...new Set(PROJECTS.flatMap(p => p.stack))].sort((a,b)=>a.localeCompare(b));
+const STACK = [
+  ...shipped.map(name => ({ name, tier:'shipped' })),
+  ...EXPLORED.map(name => ({ name, tier:'explored' })),
+];
+
+const grid = document.getElementById('grid');
+grid.innerHTML = PROJECTS.map(p => `
+  <article class="card" data-id="${p.id}">
+    <div class="card-top">
+      <h3>${p.title}</h3>
+      <span class="status" data-s="${p.status}">${p.status}</span>
+    </div>
+    <p>${p.line}</p>
+    <div class="tags">${p.stack.map(t => `<span class="tag" data-t="${t}">${t}</span>`).join('')}</div>
+  </article>`).join('');
+
+const chips = document.getElementById('chips');
+chips.innerHTML = STACK.map(s => `
+  <button class="chip" type="button" aria-pressed="false"
+          data-t="${s.name}" data-tier="${s.tier}">${s.name}</button>`).join('');
+
+/* --- the pinned run ----------------------------------------------------- */
+document.getElementById('rail').innerHTML = PIPE.map((s,i) => `
+  <div class="node" data-i="${i}">
+    <span class="idx">${String(i+1).padStart(2,'0')}</span>
+    <span class="bul"></span>
+    <span class="nm">${s.t}</span>
+    ${s.mode === 'model' ? '<span class="md">model</span>' : '<span></span>'}
+  </div>`).join('');
+
+const stepsEl = document.getElementById('steps');
+stepsEl.innerHTML = PIPE.map((s,i) => `
+  <div class="step" data-i="${i}">
+    <div class="step-in" data-i="${i}">
+      <p class="eyebrow">Stage ${String(i+1).padStart(2,'0')} &middot; ${s.mode}</p>
+      <h2>${s.t}</h2>
+      <p>${s.d}</p>
+    </div>
+  </div>`).join('');
+
+const nodes = [...document.querySelectorAll('.node')];
+const stepEls = [...document.querySelectorAll('.step')];
+const stepIns = [...document.querySelectorAll('.step-in')];
+let currentStage = -1;
+function setRun(i) {
+  if (i === currentStage) return;
+  currentStage = i;
+  nodes.forEach((n,j) => { n.dataset.on = String(j === i); n.dataset.past = String(j < i); });
+  stepEls.forEach((s,j) => { s.dataset.on = String(j === i); });
+}
+stepsEl.dataset.live = 'true';
+setRun(0);
+
+/* Nearest-copy-block-to-centre, not an IntersectionObserver.
+   An observer against a detection line leaves gaps: between two copy blocks
+   nothing intersects, so arriving mid-section by anchor link, by reload with a
+   restored scroll position, or by any discontinuous jump leaves the panel
+   showing whatever it showed last. Measuring six rects on a throttled passive
+   scroll is cheap, has no gaps, and hands over exactly at the midpoint. */
+let runTick = false;
+function syncRun() {
+  runTick = false;
+  const mid = window.innerHeight / 2;
+  let best = 0, bestD = Infinity;
+  stepIns.forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const d = Math.abs(r.top + r.height / 2 - mid);
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  setRun(best);
+}
+addEventListener('scroll', () => {
+  if (!runTick) { runTick = true; requestAnimationFrame(syncRun); }
+}, { passive: true });
+addEventListener('resize', syncRun);
+syncRun();
+
+/* --- journey rail ------------------------------------------------------- */
+document.getElementById('jrList').innerHTML = JOURNEY.map((j,i) => `
+  <li class="jr-item" id="jr-${i}" data-i="${i}">
+    <span class="jr-when">${j.when}</span>
+    <h3>${j.title}</h3>
+    <p class="jr-org">${j.org}</p>
+    <p>${j.body}</p>
+  </li>`).join('');
+document.getElementById('jrRail').innerHTML = JOURNEY.map((j,i) =>
+  `<a href="#jr-${i}" data-i="${i}">${j.year}</a>`).join('');
+
+const jrLinks = [...document.querySelectorAll('.jr-rail a')];
+jrLinks[0].dataset.on = 'true';
+const jrIO = new IntersectionObserver(entries => {
+  for (const e of entries) if (e.isIntersecting) {
+    const i = Number(e.target.dataset.i);
+    jrLinks.forEach((a,j) => { a.dataset.on = String(j === i); });
+  }
+}, { rootMargin: '-45% 0px -45% 0px' });
+document.querySelectorAll('.jr-item').forEach(el => jrIO.observe(el));
+
+/* --- pointer spotlight -------------------------------------------------- */
+for (const [host, sel] of [[grid, '.card'], [document.getElementById('methodGrid'), '.mth']]) {
+  host.addEventListener('pointermove', e => {
+    const el = e.target.closest(sel);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
+}
+
+/* --- stack filter ------------------------------------------------------- */
+const readout = document.getElementById('readout');
+let active = null;
+
+chips.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const name = chip.dataset.t;
+  active = active === name ? null : name;
+
+  chips.dataset.filtering = active ? 'true' : 'false';
+  for (const c of chips.children) c.setAttribute('aria-pressed', String(c.dataset.t === active));
+
+  const users = PROJECTS.filter(p => p.stack.includes(active));
+  for (const card of grid.children) {
+    card.dataset.dim = String(Boolean(active) && !users.some(u => u.id === card.dataset.id));
+    for (const t of card.querySelectorAll('.tag')) t.dataset.hit = String(t.dataset.t === active);
+  }
+
+  if (!active) {
+    readout.textContent = 'Select a technology to see where it is actually used.';
+  } else if (users.length) {
+    readout.innerHTML = `<b>${active}</b> ships in ${users.length}
+      project${users.length > 1 ? 's' : ''}: ${users.map(u => u.title).join(', ')}.`;
+  } else {
+    readout.innerHTML = `<b>${active}</b> &mdash; explored, not yet shipped in anything public.`;
+  }
+});
+
+/* --- header hairline ---------------------------------------------------- */
+const hd = document.getElementById('hd');
+new IntersectionObserver(([e]) => hd.classList.toggle('stuck', !e.isIntersecting),
+  { rootMargin: '-53px 0px 0px 0px' }).observe(document.querySelector('.hero'));
+
+/* --- header polarity ----------------------------------------------------
+   A 1px-tall observation line at the header's midpoint. Whichever dark band
+   crosses it owns the bar. Rebuilt on resize because the bottom margin is
+   expressed against the viewport height. */
+const darkBands = [...document.querySelectorAll('.band--tile')];
+let polarityIO;
+function watchPolarity() {
+  polarityIO?.disconnect();
+  polarityIO = new IntersectionObserver(entries => {
+    for (const e of entries) e.target.dataset.underBar = String(e.isIntersecting);
+    hd.classList.toggle('on-dark', darkBands.some(b => b.dataset.underBar === 'true'));
+  }, { rootMargin: `-26px 0px ${-(window.innerHeight - 27)}px 0px` });
+  darkBands.forEach(b => polarityIO.observe(b));
+}
+watchPolarity();
+let resizeT;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(watchPolarity, 150); });
+</script>
+</body>
+</html>
