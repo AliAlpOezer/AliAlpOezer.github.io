@@ -157,9 +157,9 @@ Adopted from the reference site, which gets this right, then deepened:
 
 ## Open questions for Alp
 
-1. **Flexus end date.** The dossier says 03/2023 - 07/2026; `master_resume_en.md` still
-   says "Present". The site currently states July 2026. One of the two source files is
-   wrong and should be corrected.
+1. ~~**Flexus end date.**~~ Resolved 2026-08-16 by Alp: Flexus ended **July 2026**; the
+   dossier was right and `master_resume_en.md` was wrong. The résumé has been corrected
+   to `03/2023 – 07/2026`. The site already stated July 2026, so no site change needed.
 2. **Claim coverage.** `npm run check:claims` reports 10 of 11 public facts unresolved,
    because `claims/claims.yaml` holds only 15 entries and is an acknowledged partial
    migration of `EVIDENCE_DOSSIER.md`. The facts themselves are in the dossier prose; the
