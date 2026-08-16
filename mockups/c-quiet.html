@@ -37,7 +37,28 @@
 
   --ease: cubic-bezier(.22,.68,.24,1);
 
+  /* Interaction vocabulary, from the timing research in
+     docs/context/interaction-inventory.md. Tokens rather than literals so the
+     feel cannot drift rule by rule, which is what happened on the reference
+     site - it ships three different lift values, two of them dead. */
+  --t-fast:  120ms;   /* press: must feel mechanical */
+  --t-base:  220ms;   /* hover colour, border, opacity */
+  --t-slow:  380ms;   /* position and size */
+  --ease-out: cubic-bezier(.2,.7,.2,1);
+  --ease-in:  cubic-bezier(.4,0,.7,.2);   /* exit is faster than entry */
+
   font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* One global suppression rather than a media query per rule. Everything below
+   is a state change first and an animation second, so killing the duration
+   leaves the interface fully usable, just instant. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -95,10 +116,35 @@ header .wrap { display: flex; align-items: center; justify-content: space-betwee
          font-weight: 600; letter-spacing: -.02em; }
 .brand svg { display: block; }
 nav { display: flex; gap: 1.75rem; }
-nav a { font-size: .8125rem; color: var(--ink-muted); text-decoration: none;
-        transition: color .2s var(--ease); }
+nav a { position: relative; font-size: .8125rem; color: var(--ink-muted); text-decoration: none;
+        transition: color var(--t-base) var(--ease-out); }
 nav a:hover { color: var(--ink); }
+header.on-dark nav a:hover { color: var(--on-tile); }
+/* Hairline growing from the left. scaleX on a pseudo-element is compositor-only;
+   animating width or the underline itself would relayout the nav on every hover. */
+nav a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px;
+  background: currentColor; transform: scaleX(0); transform-origin: left;
+  transition: transform var(--t-base) var(--ease-out);
+}
+nav a:hover::after { transform: scaleX(1); }
+nav a:not(:hover)::after { transform-origin: right; transition-duration: var(--t-fast); }
 @media (max-width: 40rem) { nav { gap: 1.125rem; } nav a:nth-child(n+4) { display: none; } }
+
+/* ---------- arrow links ----------
+   Taken from the reference site's `.read-more`, which widens a flex gap on
+   hover so the arrow slides away from the word - the one idea on that site
+   worth copying outright, because it *means* forward motion rather than
+   decorating it. Reimplemented as a transform: gap is a layout property and
+   animating it reflows the line on every hover. Half the travel of the
+   original, which moves 4px at a much larger type size. */
+.arw { display: inline-flex; align-items: center; gap: .375rem; text-decoration: none; }
+.arw::after {
+  content: "\2192"; display: inline-block;
+  transition: transform var(--t-base) var(--ease-out);
+}
+.arw:hover::after { transform: translateX(4px); }
+.arw:active::after { transform: translateX(2px); transition-duration: var(--t-fast); }
 
 /* ---------- hero ---------- */
 .hero { padding: clamp(4.5rem, 14vh, 9rem) 0 var(--section); }
@@ -144,7 +190,27 @@ nav a:hover { color: var(--ink); }
 .card > * { position: relative; z-index: 1; }
 .card[data-dim="true"] { opacity: .26; }
 
+/* No lift on hover. The grid is a single hairline-separated surface, and
+   raising one cell tears the seam it shares with its neighbours - which is why
+   the reference site can lift its cards (they are detached, with their own
+   borders) and this one cannot. The affordance is carried by the title
+   instead, plus the pointer spotlight that is already there. */
 .card-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+/* The arrow is positioned out of flow at `left: 100%`. Laying it out inline -
+   even at opacity 0 - reserves about 20px of width permanently, which was
+   enough to wrap "Munich Apartment Agent" onto a second line while its
+   neighbours stayed on one. A hover affordance must not change the resting
+   layout. */
+.card h3 a { text-decoration: none; position: relative;
+             transition: color var(--t-base) var(--ease-out); }
+.card h3 a::after {
+  content: "\2192"; position: absolute; left: 100%; top: 0; margin-left: .3125rem;
+  font-size: .875em; opacity: 0; transform: translateX(-5px);
+  transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+}
+.card:hover h3 a { color: var(--accent); }
+.card:hover h3 a::after { opacity: 1; transform: none; }
+.card h3 a:active { color: var(--accent); }
 .status { font-size: .6875rem; font-weight: 600; letter-spacing: .06em;
           text-transform: uppercase; color: var(--ink-faint); }
 .status[data-s="live"] { color: #1d7f4a; }
@@ -257,10 +323,14 @@ nav a:hover { color: var(--ink); }
   background: transparent; color: var(--ink-muted);
   border: 1px solid var(--hairline); border-radius: 9999px;
   padding: .4375rem .8125rem; min-height: 34px;
-  transition: color .25s var(--ease), border-color .25s var(--ease),
-              background .25s var(--ease), opacity .25s var(--ease);
+  transition: color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out),
+              background var(--t-base) var(--ease-out), opacity var(--t-base) var(--ease-out),
+              transform var(--t-fast) var(--ease-out);
 }
 .chip:hover { color: var(--ink); border-color: var(--ink-faint); }
+/* Press is the one place a transform is unambiguously feedback rather than
+   decoration: the control moves because you pushed it. 120ms, mechanical. */
+.chip:active { transform: scale(.97); }
 .chip[data-tier="explored"] { border-style: dashed; color: var(--ink-faint); }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent);
                              color: #fff; font-weight: 600; }
@@ -329,9 +399,29 @@ nav a:hover { color: var(--ink); }
 .stat { border-top: 1px solid var(--hairline-dk); padding-top: 1.25rem; }
 .stat b { display: block; font-size: 2.25rem; font-weight: 600; letter-spacing: -.03em; }
 .hail h2 { max-width: 18ch; }
-.hail .links { display: flex; flex-wrap: wrap; gap: 1.75rem; margin-top: 2.25rem; }
-.hail .links a { font-size: 1.0625rem; color: var(--accent-lift); text-decoration: none; }
-.hail .links a:hover { text-decoration: underline; }
+/* align-items: center, not the default stretch. With a 34px button in the row
+   the anchors stretch to match it and their hover underline detaches from the
+   text by the difference. */
+.hail .links { display: flex; flex-wrap: wrap; align-items: center;
+               gap: 1.25rem 1.75rem; margin-top: 2.25rem; }
+.hail .links a { font-size: 1.0625rem; color: var(--accent-lift); text-decoration: none;
+                 border-bottom: 1px solid transparent; padding-bottom: 2px;
+                 transition: border-color var(--t-base) var(--ease-out); }
+.hail .links a:hover { border-bottom-color: currentColor; }
+
+.copy {
+  font: inherit; font-size: .9375rem; cursor: pointer; color: var(--on-tile-mute);
+  background: transparent; border: 1px solid var(--hairline-dk); border-radius: 9999px;
+  padding: .3125rem .8125rem; min-height: 34px;
+  transition: color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out),
+              transform var(--t-fast) var(--ease-out);
+}
+.copy:hover { color: var(--on-tile); border-color: var(--on-tile-mute); }
+.copy:active { transform: scale(.97); }
+/* The confirmation is the button becoming the accent and saying what happened.
+   No toast, no icon that needs explaining, and it reverts itself. */
+.copy[data-state="done"] { color: var(--accent-lift); border-color: var(--accent-lift); }
+.copy[data-state="fail"] { color: var(--ink-faint); border-color: var(--ink-faint); }
 
 footer { padding: 3rem 0 4rem; border-top: 1px solid var(--hairline); }
 footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
@@ -430,7 +520,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
   <div class="wrap">
     <div class="band-head reveal">
       <h2>Selected work</h2>
-      <a href="#">All projects &rarr;</a>
+      <a class="arw" href="#">All projects</a>
     </div>
     <div class="grid reveal" id="grid"></div>
   </div>
@@ -547,14 +637,14 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
   <div class="wrap">
     <div class="band-head reveal">
       <h2>Writing</h2>
-      <a href="#">All posts &rarr;</a>
+      <a class="arw" href="#">All posts</a>
     </div>
     <a class="post reveal" href="#">
       <span class="when">10 August 2026 &middot; RAG, evaluation, retrieval</span>
       <h3>Your RAG has no baseline</h3>
       <p>Most retrieval &ldquo;improvements&rdquo; are unfalsifiable. What it takes to
          build a golden set small enough to hand-label and honest enough to trust.</p>
-      <span class="go">Read it &rarr;</span>
+      <span class="go arw">Read it</span>
     </a>
   </div>
 </section>
@@ -570,6 +660,12 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
       <h2>If you are hiring for this, I would like to hear from you.</h2>
       <div class="links">
         <a href="mailto:hello@alpozer.dev">hello@alpozer.dev</a>
+        <!-- A real button, not a decorated link: the mailto still works for
+             anyone with a mail client wired up, and everyone else gets the
+             thing they actually wanted, which is the address on the clipboard. -->
+        <button class="copy" type="button" data-copy="hello@alpozer.dev">
+          <span class="copy-label">Copy</span>
+        </button>
         <a href="https://github.com/AliAlpOezer">GitHub</a>
         <a href="#">LinkedIn</a>
       </div>
@@ -653,7 +749,7 @@ const grid = document.getElementById('grid');
 grid.innerHTML = PROJECTS.map(p => `
   <article class="card" data-id="${p.id}">
     <div class="card-top">
-      <h3>${p.title}</h3>
+      <h3><a href="#">${p.title}</a></h3>
       <span class="status" data-s="${p.status}">${p.status}</span>
     </div>
     <p>${p.line}</p>
@@ -781,6 +877,33 @@ chips.addEventListener('click', e => {
     readout.innerHTML = `<b>${active}</b> &mdash; explored, not yet shipped in anything public.`;
   }
 });
+
+/* --- copy to clipboard --------------------------------------------------
+   The only genuinely new behaviour in the interaction pass; everything else
+   is polish on something already there. Reverts itself, and reports failure
+   honestly rather than claiming success - clipboard writes reject on an
+   insecure origin or a denied permission, and silently pretending it worked
+   is worse than the button not existing. */
+for (const btn of document.querySelectorAll('.copy')) {
+  const label = btn.querySelector('.copy-label');
+  const original = label.textContent;
+  let revert;
+  btn.addEventListener('click', async () => {
+    clearTimeout(revert);
+    try {
+      await navigator.clipboard.writeText(btn.dataset.copy);
+      btn.dataset.state = 'done';
+      label.textContent = 'Copied';
+    } catch {
+      btn.dataset.state = 'fail';
+      label.textContent = 'Press ⌘C';
+    }
+    revert = setTimeout(() => {
+      delete btn.dataset.state;
+      label.textContent = original;
+    }, 1600);
+  });
+}
 
 /* --- header hairline ---------------------------------------------------- */
 const hd = document.getElementById('hd');
