@@ -27,9 +27,15 @@ iterated. He has now explicitly withdrawn that:
 > "I don't care if it's costing a lot of compute. We don't care."
 
 Do not cite the incremental-motion constraint back at him. It was his instruction and he
-replaced it. The remaining constraints from that section still hold on their own merits:
-no forever-running O(n²) canvas loop, no blurred glow blobs, no several competing effects
-at once. Those were criticisms of the reference site's implementation, not of ambition.
+replaced it.
+
+**Two of the three constraints that used to sit here are also withdrawn as of 2026-08-16.**
+The line previously read "no forever-running O(n²) canvas loop, no blurred glow blobs, no
+several competing effects at once". Alp has since ruled that the reference site's particle
+field is *wanted*, so the first clause no longer stands as an aesthetic constraint - only as
+an engineering note. See "The background is now a named deliverable" below and the correction
+in `reference-site-analysis.md`. Still standing: no blurred glow blobs, and no several
+competing effects at once.
 
 ## Page weight is explicitly permitted. JS-dependence still is not.
 
@@ -302,3 +308,42 @@ page only from a settled scroll position.**
 - `hello@alpozer.dev` is a placeholder on an unregistered domain; the LinkedIn link is `#`.
 - "If you are hiring for this, I would like to hear from you" is a claim about intent that
   Alp should confirm he wants stated that directly.
+
+## The background is now a named deliverable, 2026-08-16
+
+Alp chose **direction C** ("I liked c the most") and immediately added a requirement:
+
+> "I want you to implement background moving stuff like kerem is having. [...] WE LIKE THAT
+> KIND OF REVOLVING THING"
+
+So the brief is a **living, drifting, revolving field of connected nodes** - the
+constellation/particle-mesh family from `keremkeptig.info` - built into C. This is decided,
+not open. Do not propose replacing it with something calmer, and do not argue that a moving
+background is undisciplined; that argument was made, heard, and overruled.
+
+**What is actually hard about it, and where the effort goes:**
+
+1. **It has to work on three backgrounds.** C flips full-bleed between white, parchment
+   `#f5f5f7` and near-black `#1d1d1f`. Most particle fields on the web are designed for a
+   dark hero and read as dirt on white. The field must be built for the light bands first,
+   not adapted to them afterwards.
+2. **Palette discipline still binds.** Achromatic greys or the single blue
+   (`#0066cc` / `#2997ff`). Colour is not what makes this good.
+3. **The burn is the engineering problem, not the effect.** Naive all-pairs is 1,770 checks
+   a frame at 60 nodes. A uniform spatial hash or grid buckets gives an identical picture far
+   cheaper; batch all segments into one canvas path rather than one per line; cap the frame
+   rate for slow drift; pause on `IntersectionObserver` and `visibilitychange`; be careful
+   with `devicePixelRatio` on a full-bleed canvas. Target is a 4 GB Surface Laptop Go.
+4. **Invariants 3, 4 and 5 are untouched.** Vendored and self-hosted, suppressed under
+   `prefers-reduced-motion`, and the page reads with the canvas absent.
+5. **The failure mode to design against is looking dated** - a 2014 startup landing page.
+   The audience is HR and hiring engineers.
+
+Research on how to build it ran as a seven-agent workflow (five survey lenses, an adversarial
+vet, then a synthesis). Its script is worth keeping as the template for this kind of pass:
+`~/.claude/projects/C--Users-alial-dev-website/.../workflows/scripts/c-background-motion-*.js`.
+
+**Process note worth not repeating:** the first launch of that workflow carried the old
+"particle mesh is rejected" line in its brief, which would have made all five lenses research
+the wrong question. It had to be stopped and relaunched. When a recorded constraint is
+overruled, fix the context packs *before* spending agents against them.
