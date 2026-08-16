@@ -1,7 +1,52 @@
 # Design record - personal website
 
-Status: draft, awaiting design-direction checkpoint.
-Written 2026-08-16.
+Written 2026-08-16. Direction chosen, scaffold built and committed (`d10f8fc`).
+Companion file: `reference-site-analysis.md`.
+
+## Where this stands
+
+Astro scaffold is complete and builds clean: 14 routes, six projects with case-study
+pages, one post, five journey entries, `/about`, `/now`, RSS, sitemap, 404.
+
+**Remaining buckets, in order:**
+
+1. **Repo-reading pass.** Rewrite each case study from the actual repositories
+   (`advocate`, `sage`, `atlas`, `munich-apartment-agent`, `voice-scheduler`,
+   `youtube-mcp-server`, `nemotron-mcp`) around the real decision and the real
+   trade-off. The current bodies are written from `master_resume_en.md` - accurate but
+   shallow, describing what each system does rather than what happened while building
+   it. Alp has explicitly authorised reading and reshaping the projects for
+   presentation.
+2. **Blog posts.** One sample written (`your-rag-has-no-baseline`) to establish register.
+   Topics should carry Alp's own opinions, not inferred ones.
+3. **Motion pass.** See below.
+4. **Deploy.** Register `alpozer.dev`, Cloudflare Pages, CI gate on broken links and
+   accessibility regressions.
+
+## Motion and dynamism - direction added 2026-08-16
+
+Alp's reaction to the built editorial site: *"For a start, it is not that bad. But we
+want more dynamism as like Kerem is having, moving shapes in background is not a bad
+idea. But we can go there step by step."*
+
+So the editorial direction stands, but it is currently **too static for his taste** and
+needs animated background elements. Constraints when adding them:
+
+- **Incremental.** He said step by step. Add one motion element, show it, iterate. Do
+  not deliver a motion overhaul in one pass.
+- Must not reintroduce what was criticised in the reference site: no forever-running
+  O(n²) canvas loop, no blurred glow blobs, no competing simultaneous effects.
+- Invariants 3 and 5 still bind: the page must work with JS disabled, and every
+  animation must be suppressed under `prefers-reduced-motion`.
+- Editorial restraint is the reason direction A was chosen over the atmospheric
+  mockup. The motion should read as considered, not as decoration bolted on. Prefer one
+  well-made element over several.
+
+Candidate approaches not yet evaluated with him: a slow generative field rendered once
+to SVG or canvas with a frame budget; scroll-linked transforms via CSS
+`animation-timeline` (no JS); a subtle grain or gradient that drifts; type or rule
+animations on section entry. `mockups/b-atmospheric.html` has a working pointer-spotlight
+implementation that could be adapted at lower intensity.
 
 ## Goal
 
