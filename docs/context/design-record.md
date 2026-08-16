@@ -250,3 +250,61 @@ Adopted from the reference site, which gets this right, then deepened:
    IDs do not exist yet. Either extend the claim store, or accept the check as advisory
    until the migration completes.
 3. **Hosting.** Cloudflare Pages assumed but not set up.
+
+## Direction C promoted into `src/` - 2026-08-16
+
+The site now runs on the chosen identity. `npm run dev`, or `npm run build &&
+npm run preview`. 14 routes build clean.
+
+**What changed:**
+
+- **Fonts.** Newsreader + Inter out, **Instrument Sans** in - one family at two
+  optical registers, the way SF Pro Display / SF Pro Text works. 92 KB total,
+  down from ~330 KB. `scripts/fetch-fonts.mjs` regenerates it.
+- **`tokens.css` rewritten.** Three grounds rather than two: page, sunk band,
+  and a full-bleed near-black tile. The tile is a first-class surface here, not
+  a dark-mode artefact - the homepage flips into it twice.
+- **Dark mode is not an inversion.** It is the tile register the light theme
+  already uses for its bands, promoted to the whole page. That is why it needed
+  no separate design pass: it was already on the homepage.
+- **New components:** `QuietField` (the background), `RunPanel` (the pinned
+  six-stage set piece), `StackField`, `CopyButton`. Non-collection home data
+  lives in `src/data/home.ts`.
+- **Mono dropped from eight UI spots**, kept in `prose.css` where code wants it.
+
+**Invariant 3 is now proven, not deferred.** Verified with
+`--blink-settings=scriptEnabled=false`: with JS fully disabled the homepage
+renders every project card, tagline and tag, the full-bleed bands, and all copy.
+The prototypes rendered blank here, which was the one thing that had to change
+on promotion. The islands are only the observers, the stack filter and the copy
+button.
+
+**Cross-component wiring verified on real data**, not by inspection: clicking
+the LangGraph chip sets `aria-pressed`, writes "LangGraph ships in 2 projects:
+Advocate, Munich Apartment Agent" into the readout, dims the four
+non-matching cards and highlights both matching tags. `StackField` addresses the
+cards by `data-stack` rather than importing them, so the two stay decoupled.
+
+**Two header bugs found by screenshotting:**
+
+1. The bar was too transparent (72%) to read against dense content scrolling
+   under it. Now 88%, plus an `@supports not (backdrop-filter)` fallback to a
+   fully opaque bar - the translucency only works because the blur smears what
+   is behind it, and any renderer that skips that compositing pass leaves body
+   text legible straight through the nav.
+2. The `stuck` sentinel never fired. It observed `<main>` against a zero-height
+   line at the viewport top, but `<main>` spans the whole document and therefore
+   always intersects. Scroll position was the thing actually being asked about.
+
+**Still open after this pass:**
+
+- The inner routes (`/work`, `/writing`, `/journey`, `/about`, `/now`) inherit
+  the new tokens and read coherently, but they were not redesigned - they are
+  still direction A's *structure* wearing C's *skin*. "One design system across
+  every route" is the primary quality bar from `reference-site-analysis.md`, so
+  this is the next piece of work, not a finished state.
+- `mockups/` and the two throwaway scripts (`fetch-proto-fonts.mjs`,
+  `serve-mockups.mjs`) are still present. This file previously authorised
+  deleting them once a direction was promoted; they are kept for now because the
+  side-by-side is still useful. Delete when that stops being true.
+- Claim coverage still reports unresolved IDs - see open question 2, unchanged.

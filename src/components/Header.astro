@@ -109,6 +109,16 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
   }
   .site-head.stuck { border-bottom-color: var(--rule); }
 
+  /* The translucency only works because the blur smears what is behind it.
+     Where backdrop-filter is unavailable - older browsers, and any renderer
+     that skips the compositing pass - the same 88% bar leaves body text
+     legible straight through the nav. Go opaque there rather than ship a
+     header that is unreadable over dense content. */
+  @supports not (backdrop-filter: blur(1px)) {
+    .site-head { background: var(--paper); }
+    .site-head.on-dark { background: var(--tile); }
+  }
+
   .site-head.on-dark {
     background: color-mix(in oklab, var(--tile) 86%, transparent);
     color: var(--on-tile);
