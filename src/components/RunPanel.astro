@@ -1,0 +1,239 @@
+---
+import { PIPELINE } from '../data/home';
+
+interface Props {
+  /** Project the trace belongs to, shown in the panel bar. */
+  system: string;
+  cadence: string;
+  store: string;
+}
+const { system, cadence, store } = Astro.props;
+---
+
+{/*
+  The set piece. Apple's move is a sticky stage whose visual advances while
+  the copy scrolls past it.
+
+  A native scroll timeline cannot drive one shared stage from six sibling
+  ranges without `timeline-scope`, which is not portable yet, so this is the
+  one place on the site that uses a scroll listener. With scripting off every
+  step still reads as prose and the panel rests showing all six stages -
+  invariant 3 is satisfied by construction, not by a fallback path.
+*/}
+<div class="run">
+  <div class="hold">
+    <div class="panel">
+      <div class="panel-bar">
+        <span>{system}</span>
+        <span><i class="dot" aria-hidden="true"></i>live</span>
+      </div>
+      <div class="rail">
+        {PIPELINE.map((s, i) => (
+          <div class="node" data-i={i}>
+            <span class="idx">{String(i + 1).padStart(2, '0')}</span>
+            <span class="bul" aria-hidden="true"></span>
+            <span class="nm">{s.name}</span>
+            {s.mode === 'model' ? <span class="md">model</span> : <span></span>}
+          </div>
+        ))}
+      </div>
+      <div class="panel-foot">
+        <span>{cadence}</span>
+        <span>{store}</span>
+      </div>
+    </div>
+  </div>
+
+  <ol class="steps">
+    {PIPELINE.map((s, i) => (
+      <li class="step" data-i={i}>
+        <div class="step-in" data-i={i}>
+          <p class="eyebrow">Stage {String(i + 1).padStart(2, '0')} &middot; {s.mode}</p>
+          <h3>{s.name}</h3>
+          <p>{s.body}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  const run = document.querySelector('.run');
+  if (run) {
+    const nodes = [...run.querySelectorAll<HTMLElement>('.node')];
+    const steps = [...run.querySelectorAll<HTMLElement>('.step')];
+    const ins = [...run.querySelectorAll<HTMLElement>('.step-in')];
+    const list = run.querySelector<HTMLElement>('.steps');
+
+    let current = -1;
+    const set = (i: number) => {
+      if (i === current) return;
+      current = i;
+      nodes.forEach((n, j) => {
+        n.dataset.on = String(j === i);
+        n.dataset.past = String(j < i);
+      });
+      steps.forEach((s, j) => { s.dataset.on = String(j === i); });
+    };
+
+    if (list) list.dataset.live = 'true';
+    set(0);
+
+    /* Nearest-copy-block-to-centre rather than an IntersectionObserver.
+       An observer against a detection line leaves gaps: between two copy
+       blocks nothing intersects, so arriving mid-section by anchor link or a
+       restored scroll position leaves the panel showing whatever it showed
+       last. Measuring six rects on a throttled passive scroll is cheap, has
+       no gaps, and hands over exactly at the midpoint. */
+    let tick = false;
+    const sync = () => {
+      tick = false;
+      const mid = window.innerHeight / 2;
+      let best = 0, bestD = Infinity;
+      ins.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      set(best);
+    };
+    addEventListener('scroll', () => {
+      if (!tick) { tick = true; requestAnimationFrame(sync); }
+    }, { passive: true });
+    addEventListener('resize', sync);
+    sync();
+  }
+</script>
+
+<style>
+  .run { display: grid; gap: var(--space-xl); align-items: start; }
+  @media (min-width: 62rem) {
+    .run { grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); gap: var(--space-3xl); }
+  }
+
+  /* The panel centres in the pinned viewport so it sits level with whichever
+     step is active, rather than riding the top edge. */
+  .hold { margin-bottom: var(--space-2xl); }
+  @media (min-width: 62rem) {
+    .hold {
+      position: sticky;
+      top: 4.5rem;
+      height: calc(100vh - 4.5rem);
+      display: flex;
+      align-items: center;
+      margin-bottom: 0;
+    }
+    .hold > .panel { width: 100%; }
+  }
+
+  .panel {
+    border: 1px solid var(--rule-dark);
+    border-radius: var(--radius-lg);
+    background: #000;
+    overflow: hidden;
+    box-shadow: var(--shadow-product);
+  }
+  .panel-bar,
+  .panel-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--text-xs);
+    color: var(--on-tile-mute);
+  }
+  .panel-bar { border-bottom: 1px solid var(--rule-dark); }
+  .panel-foot { border-top: 1px solid var(--rule-dark); flex-wrap: wrap; }
+
+  .dot {
+    display: inline-block;
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 50%;
+    background: var(--positive);
+    margin-right: var(--space-3xs);
+    vertical-align: middle;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .dot { animation: pulse 2.6s ease-in-out infinite; }
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .rail { padding-block: var(--space-xs); }
+  .node {
+    position: relative;
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1.75rem 0.625rem minmax(0, 1fr) auto;
+    column-gap: var(--space-2xs);
+    padding: 0.625rem var(--space-sm);
+  }
+  .idx { font-size: var(--text-xs); color: #545458; font-variant-numeric: tabular-nums; }
+  .bul {
+    width: 0.625rem; height: 0.625rem; border-radius: 50%;
+    border: 1px solid #48484a; background: #000; z-index: 1;
+    transition: background var(--t-slow) var(--ease-out),
+                border-color var(--t-slow) var(--ease-out),
+                box-shadow var(--t-slow) var(--ease-out);
+  }
+  .nm {
+    font-size: var(--text-sm); color: var(--on-tile-mute);
+    transition: color var(--t-slow) var(--ease-out);
+  }
+  .md {
+    font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: #545458;
+    border: 1px solid #38383a; border-radius: 9999px; padding: 0.125rem 0.4375rem;
+    transition: color var(--t-slow) var(--ease-out), border-color var(--t-slow) var(--ease-out);
+  }
+
+  /* Connector: spans exactly one row, previous bullet centre to this one. */
+  .node + .node::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--space-sm) + 1.75rem + var(--space-2xs) + 0.3125rem);
+    top: -50%;
+    height: 100%;
+    width: 1px;
+    background: #38383a;
+    transition: background var(--t-slow) var(--ease-out);
+  }
+  .node[data-past='true']::before { background: var(--accent-lift); }
+  .node[data-past='true'] .bul { background: var(--accent-lift); border-color: var(--accent-lift); }
+  .node[data-on='true'] .bul {
+    background: var(--accent-lift); border-color: var(--accent-lift);
+    box-shadow: 0 0 0 4px rgb(41 151 255 / 0.2);
+  }
+  .node[data-on='true'] .nm { color: #fff; }
+  .node[data-on='true'] .md { color: var(--accent-lift); border-color: var(--accent-lift); }
+
+  /* Bottom padding keeps the pinned panel in view through the final stage:
+     without it the sticky element bottoms out against the container while the
+     last step is still being read. */
+  .steps { list-style: none; margin: 0; padding: 0 0 14vh; display: grid; }
+  .step {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: var(--space-lg);
+    transition: opacity var(--t-slow) var(--ease-out);
+  }
+  .step h3 { font-size: var(--text-2xl); letter-spacing: var(--tracking-head); }
+  .step p:last-child {
+    margin-top: var(--space-sm);
+    max-width: 34rem;
+    color: var(--on-tile-mute);
+    font-size: var(--text-md);
+    line-height: 1.55;
+  }
+  .step .eyebrow { color: var(--accent-lift); }
+
+  /* Only dim once the script is live, so a JS-less page keeps all six legible. */
+  .steps[data-live='true'] .step { opacity: 0.3; }
+  .steps[data-live='true'] .step[data-on='true'] { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .steps[data-live='true'] .step { opacity: 1; }
+  }
+</style>

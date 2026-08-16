@@ -47,10 +47,9 @@ const person = {
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="alternate" type="application/rss+xml" title={`${SITE.name} · Writing`} href="/rss.xml" />
 
-  {/* The two faces that render above the fold. The rest load on demand
+  {/* The one face that renders above the fold. The rest load on demand
       via unicode-range, so there is nothing to preload for them. */}
-  <link rel="preload" href="/fonts/newsreader-latin-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/inter-latin-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/instrument-sans-latin-normal.woff2" as="font" type="font/woff2" crossorigin />
 
   <meta property="og:type" content={article ? 'article' : 'website'} />
   <meta property="og:title" content={fullTitle} />
@@ -63,8 +62,8 @@ const person = {
   {article && <meta property="article:published_time" content={article.published.toISOString()} />}
   {article?.updated && <meta property="article:modified_time" content={article.updated.toISOString()} />}
 
-  <meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#1a1c22" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1d1d1f" media="(prefers-color-scheme: dark)" />
 
   {/* Applies a stored theme override before first paint, so there is no
       flash. If nothing is stored we set nothing and the CSS media query

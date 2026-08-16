@@ -7,7 +7,7 @@
  * We self-host rather than hotlink Google Fonts. Hotlinking leaks every
  * visitor's IP to a third party, which a German court has already ruled
  * against, and it makes the site's typography depend on someone else's
- * uptime. Both fonts are SIL Open Font License, so redistribution is fine.
+ * uptime. Instrument Sans is SIL Open Font License, so redistribution is fine.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -22,14 +22,9 @@ const UA =
 
 const FAMILIES = [
   {
-    name: 'Newsreader',
-    file: 'newsreader',
-    url: 'https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap',
-  },
-  {
-    name: 'Inter',
-    file: 'inter',
-    url: 'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap',
+    name: 'Instrument Sans',
+    file: 'instrument-sans',
+    url: 'https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap',
   },
 ];
 

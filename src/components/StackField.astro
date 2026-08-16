@@ -1,0 +1,150 @@
+---
+import { EXPLORED } from '../data/home';
+
+interface Props {
+  /** Every technology shipped in a public project, with the projects using it. */
+  shipped: { name: string; projects: { title: string; id: string }[] }[];
+}
+const { shipped } = Astro.props;
+
+const items = [
+  ...shipped.map((s) => ({ name: s.name, tier: 'shipped' as const, projects: s.projects })),
+  ...EXPLORED.map((name) => ({ name, tier: 'explored' as const, projects: [] })),
+];
+---
+
+<div class="stack">
+  <div class="aside">
+    <p class="eyebrow">Everything I have touched</p>
+    <h2>The stack</h2>
+    <p class="readout" id="stack-readout" aria-live="polite">
+      Select a technology to see where it is actually used.
+    </p>
+  </div>
+  <div>
+    <div class="chips" id="stack-chips">
+      {items.map((s) => (
+        <button
+          class="chip"
+          type="button"
+          aria-pressed="false"
+          data-tech={s.name}
+          data-tier={s.tier}
+          data-projects={JSON.stringify(s.projects.map((p) => p.title))}
+        >{s.name}</button>
+      ))}
+    </div>
+    <p class="legend">
+      <span><i></i>shipped with</span>
+      <span><i class="dashed"></i>explored, not shipped</span>
+    </p>
+  </div>
+</div>
+
+<script>
+  const chips = document.getElementById('stack-chips');
+  const readout = document.getElementById('stack-readout');
+
+  if (chips && readout) {
+    const rest = readout.textContent;
+    let active: string | null = null;
+
+    chips.addEventListener('click', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip');
+      if (!chip) return;
+      const name = chip.dataset.tech!;
+      active = active === name ? null : name;
+
+      chips.dataset.filtering = active ? 'true' : 'false';
+      for (const c of Array.from(chips.children) as HTMLElement[]) {
+        c.setAttribute('aria-pressed', String(c.dataset.tech === active));
+      }
+
+      /* Cards live in the page, not in this component. They are addressed by
+         data attribute rather than imported, so the two stay decoupled. */
+      const cards = document.querySelectorAll<HTMLElement>('[data-stack]');
+      let used: string[] = [];
+      if (active) {
+        used = JSON.parse(chip.dataset.projects || '[]');
+        for (const card of cards) {
+          const has = (card.dataset.stack || '').split('|').includes(active);
+          card.dataset.dim = String(!has);
+          for (const t of card.querySelectorAll<HTMLElement>('[data-tag]')) {
+            t.dataset.hit = String(t.dataset.tag === active);
+          }
+        }
+      } else {
+        for (const card of cards) {
+          delete card.dataset.dim;
+          for (const t of card.querySelectorAll<HTMLElement>('[data-tag]')) delete t.dataset.hit;
+        }
+      }
+
+      if (!active) readout.textContent = rest;
+      else if (used.length) {
+        readout.innerHTML =
+          `<b>${active}</b> ships in ${used.length} project${used.length > 1 ? 's' : ''}: ${used.join(', ')}.`;
+      } else {
+        readout.innerHTML = `<b>${active}</b> &mdash; explored, not yet shipped in anything public.`;
+      }
+    });
+  }
+</script>
+
+<style>
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); }
+  @media (min-width: 60rem) {
+    .stack { grid-template-columns: 17rem minmax(0, 1fr); gap: var(--space-3xl); }
+  }
+  .aside { position: sticky; top: 5rem; align-self: start; }
+  .aside h2 { margin-bottom: var(--space-sm); }
+  .readout { font-size: var(--text-sm); color: var(--ink-muted); min-height: 5rem; }
+  .readout :global(b) { color: var(--ink); font-weight: 600; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+  .chip {
+    font-size: var(--text-sm);
+    letter-spacing: var(--tracking-body);
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid var(--rule);
+    border-radius: 9999px;
+    padding: 0.4375rem 0.8125rem;
+    min-height: 34px;
+    transition: color var(--t-base) var(--ease-out),
+                border-color var(--t-base) var(--ease-out),
+                background var(--t-base) var(--ease-out),
+                opacity var(--t-base) var(--ease-out),
+                transform var(--t-fast) var(--ease-out);
+  }
+  .chip:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .chip[data-tier='explored'] { border-style: dashed; color: var(--ink-faint); }
+  .chip[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  /* Press is the one place a transform is unambiguously feedback rather than
+     decoration: the control moves because you pushed it. */
+  .chip:active { transform: scale(0.97); }
+  .chips[data-filtering='true'] .chip:not([aria-pressed='true']) { opacity: 0.32; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+  }
+  .legend i {
+    display: inline-block;
+    width: 1.5rem;
+    border-top: 1px solid currentColor;
+    vertical-align: middle;
+    margin-right: var(--space-2xs);
+  }
+  .legend i.dashed { border-top-style: dashed; }
+</style>

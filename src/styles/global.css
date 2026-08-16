@@ -18,6 +18,7 @@ body {
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background var(--dur-slow) var(--ease),
@@ -29,60 +30,128 @@ body {
 img, picture, svg, video { display: block; max-width: 100%; height: auto; }
 input, button, textarea, select { font: inherit; color: inherit; }
 
-/* ---------- headings ---------- */
+/* ---------- headings ----------
+   Tracking tightens as size grows; that relationship is the identity. */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: var(--tracking-tight);
+  font-weight: 600;
   line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
   text-wrap: balance;
 }
+h1 { font-size: var(--text-3xl); line-height: var(--leading-tight);
+     letter-spacing: var(--tracking-display); }
+h2 { font-size: var(--text-2xl); letter-spacing: var(--tracking-head); }
+h3 { font-size: var(--text-xl); }
 p, li { text-wrap: pretty; }
 
 a { color: inherit; }
 
-/* ---------- shared utilities ---------- */
+/* ---------- layout ---------- */
 .wrap {
   max-width: var(--page);
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
 
-.label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 500;
+/* A full-bleed band. The colour change between adjacent bands is the
+   divider - there is no rule between sections anywhere on this site. */
+.band { padding-block: var(--section); }
+.band--sunk  { background: var(--paper-sunk); }
+.band--tile  { background: var(--tile); color: var(--on-tile); }
+.band--tile .lede,
+.band--tile .small     { color: var(--on-tile-mute); }
+.band--tile .eyebrow   { color: var(--accent-lift); }
+.band--tile .sec-head a { color: var(--accent-lift); }
+
+.band-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+}
+
+/* ---------- text roles ---------- */
+.eyebrow {
+  font-size: var(--text-sm);
+  font-weight: 600;
   letter-spacing: var(--tracking-label);
+  color: var(--accent);
+  margin-bottom: var(--space-xs);
+}
+
+.lede {
+  font-size: var(--text-lg);
+  line-height: 1.38;
+  letter-spacing: -0.019em;
+  color: var(--ink-muted);
+  max-width: var(--measure-wide);
+}
+
+.small { font-size: var(--text-sm); color: var(--ink-muted); }
+
+.label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-faint);
 }
 
 .measure { max-width: var(--measure); }
 
-/* Section header: a mono label with a strong rule beneath it. */
+/* Section header. Direction A ruled this off with a heavy border; in C the
+   band's colour change is already the divider, so the rule is gone and the
+   weight moved into the type. */
 .sec-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-sm);
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--rule-strong);
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
 }
-.sec-head h2 { font-family: var(--font-mono); font-size: var(--text-xs);
-  font-weight: 500; letter-spacing: var(--tracking-label);
-  text-transform: uppercase; color: var(--ink); }
-.sec-head a { font-size: var(--text-sm); color: var(--ink-muted);
-  text-decoration: none; transition: color var(--dur-fast) var(--ease); }
-.sec-head a:hover { color: var(--accent); }
+.sec-head h2 { font-size: var(--text-2xl); letter-spacing: var(--tracking-head); }
+.sec-head a {
+  font-size: var(--text-sm);
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--t-base) var(--ease-out);
+}
 
-/* Underlined inline link, editorial style. */
+/* ---------- links ---------- */
+
+/* Arrow link. Taken from the reference site's `.read-more`, which widens a
+   flex gap so the arrow slides away from the word - it means forward motion
+   rather than decorating it. Reimplemented as a transform: gap is a layout
+   property and animating it reflows the line on every hover. */
+.arw {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  color: var(--accent);
+  transition: color var(--t-base) var(--ease-out);
+}
+.arw::after {
+  content: "\2192";
+  display: inline-block;
+  transition: transform var(--t-base) var(--ease-out);
+}
+.arw:hover::after  { transform: translateX(4px); }
+.arw:active::after { transform: translateX(2px); transition-duration: var(--t-fast); }
+
+/* Underlined inline link. */
 .link {
   color: inherit;
   text-decoration: none;
   border-bottom: 1px solid var(--rule);
   padding-bottom: 2px;
-  transition: border-color var(--dur-fast) var(--ease),
-              color var(--dur-fast) var(--ease);
+  transition: border-color var(--t-base) var(--ease-out),
+              color var(--t-base) var(--ease-out);
 }
 .link:hover { color: var(--accent); border-color: var(--accent); }
 
@@ -105,13 +174,43 @@ a { color: inherit; }
   text-decoration: none;
   font-size: var(--text-sm);
   transform: translateY(-250%);
-  transition: transform var(--dur-fast) var(--ease);
+  transition: transform var(--t-base) var(--ease-out);
 }
 .skip-link:focus-visible { transform: none; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; padding: 0;
   margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ---------- motion ----------
+   Scroll-driven reveals, native CSS, zero JS. The default state is visible;
+   the animation only ever applies where the timeline is supported AND motion
+   is welcome, so "works without JS" and "respects reduced motion" are
+   satisfied by construction rather than by a fallback path.
+
+   Above-the-fold content must NOT be scroll-linked: an element already in
+   view at load sits at whatever progress its range maps to and paints
+   half-finished. Hero content uses .intro, a time-based entry; only
+   below-fold sections use .reveal. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .intro { animation: rise 0.8s var(--ease) both; }
+  .intro:nth-of-type(2) { animation-delay: 0.06s; }
+  .intro:nth-of-type(3) { animation-delay: 0.12s; }
+  .intro:nth-of-type(4) { animation-delay: 0.18s; }
 }
 
 @media (prefers-reduced-motion: reduce) {

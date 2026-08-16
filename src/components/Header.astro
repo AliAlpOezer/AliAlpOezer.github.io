@@ -5,9 +5,22 @@ import ThemeToggle from './ThemeToggle.astro';
 const path = Astro.url.pathname;
 const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
 ---
-<header class="site-head">
+<header class="site-head" id="site-head">
   <div class="wrap bar">
-    <a class="wordmark" href="/">{SITE.name}</a>
+    <a class="wordmark" href="/">
+      {/* An A assembled from four detached links, the apex carrying the accent.
+          Reads as a chain that gains height - the LangChain idea of assembly
+          and uplift without borrowing its bird. The apex is a segment rather
+          than a floating dot, which at 22px was reading as a head. */}
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 20.6 L9.1 10.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M14.9 10.4 L20 20.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M8.7 16 H15.3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M10.2 8.4 L12 4.8 L13.8 8.4" stroke="var(--accent)" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span>{SITE.shortName}</span>
+    </a>
     <nav aria-label="Main">
       <ul>
         {NAV.map(({ href, label }) => (
@@ -21,57 +34,155 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
   </div>
 </header>
 
+<script>
+  /* Header polarity.
+
+     A frosted light bar sitting over a full-bleed dark band reads as a broken
+     overlay, and this design flips background colour several times per page.
+     The bar adapts instead: same deference, opposite polarity.
+
+     A 1px observation line at the bar's midpoint; whichever dark band crosses
+     it owns the bar. Rebuilt on resize because the bottom margin is expressed
+     against the viewport height. */
+  const head = document.getElementById('site-head');
+  const darkBands = [...document.querySelectorAll<HTMLElement>('.band--tile')];
+
+  if (head && darkBands.length) {
+    let io: IntersectionObserver | undefined;
+
+    const watch = () => {
+      io?.disconnect();
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            (e.target as HTMLElement).dataset.underBar = String(e.isIntersecting);
+          }
+          head.classList.toggle(
+            'on-dark',
+            darkBands.some((b) => b.dataset.underBar === 'true'),
+          );
+        },
+        { rootMargin: `-26px 0px ${-(window.innerHeight - 27)}px 0px` },
+      );
+      darkBands.forEach((b) => io!.observe(b));
+    };
+
+    watch();
+    let t: number;
+    addEventListener('resize', () => {
+      clearTimeout(t);
+      t = window.setTimeout(watch, 150);
+    });
+  }
+
+  /* The hairline under the bar appears only once the page has moved.
+     Observing <main> against a line at the viewport top does not work - main
+     spans the whole document, so it always intersects. Scroll position is the
+     thing actually being asked about, so ask it directly. */
+  if (head) {
+    let ticking = false;
+    const mark = () => {
+      ticking = false;
+      head.classList.toggle('stuck', window.scrollY > 8);
+    };
+    addEventListener('scroll', () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(mark); }
+    }, { passive: true });
+    mark();
+  }
+</script>
+
 <style>
-  .site-head { padding-block: var(--space-lg) 0; }
+  .site-head {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    background: color-mix(in oklab, var(--paper) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t-slow) var(--ease-out),
+                background-color var(--t-slow) var(--ease-out);
+  }
+  .site-head.stuck { border-bottom-color: var(--rule); }
+
+  .site-head.on-dark {
+    background: color-mix(in oklab, var(--tile) 86%, transparent);
+    color: var(--on-tile);
+  }
+  .site-head.on-dark :global(nav a) { color: var(--on-tile-mute); }
+  .site-head.on-dark :global(nav a:hover),
+  .site-head.on-dark :global(nav a[aria-current='page']) { color: var(--on-tile); }
+  .site-head.on-dark.stuck { border-bottom-color: var(--rule-dark); }
 
   .bar {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-sm);
-    flex-wrap: wrap;
+    width: 100%;
   }
 
   .wordmark {
-    font-family: var(--font-display);
-    font-size: var(--text-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    font-size: var(--text-base);
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--tracking-tight);
     text-decoration: none;
-    color: var(--ink);
+    color: inherit;
   }
+  .wordmark svg { display: block; flex: none; }
 
-  nav { display: flex; align-items: baseline; gap: var(--space-md); }
+  nav { display: flex; align-items: center; gap: var(--space-md); }
 
   nav ul {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--space-md);
     list-style: none;
     padding: 0;
   }
 
   nav a {
+    position: relative;
     font-size: var(--text-sm);
     color: var(--ink-muted);
     text-decoration: none;
-    transition: color var(--dur-fast) var(--ease);
+    transition: color var(--t-base) var(--ease-out);
   }
   nav a:hover { color: var(--ink); }
 
-  /* The current section is stated, not just coloured, so it survives
-     both themes and screen readers. */
-  nav a[aria-current='page'] { color: var(--ink); }
-  nav a[aria-current='page']::after {
+  /* A hairline growing from the left. scaleX on a pseudo-element is
+     compositor-only; animating width would relayout the nav on every hover.
+     It retracts to the right, faster - exit should not feel reluctant. */
+  nav a::after {
     content: '';
-    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -5px;
     height: 1px;
-    margin-top: 3px;
-    background: var(--accent);
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--t-base) var(--ease-out);
   }
+  nav a:hover::after { transform: scaleX(1); }
+  nav a:not(:hover)::after { transform-origin: right; transition-duration: var(--t-fast); }
 
-  @media (max-width: 30rem) {
-    nav { gap: var(--space-sm); width: 100%; justify-content: space-between; }
+  /* The current section is stated, not just coloured, so it survives both
+     themes and screen readers. */
+  nav a[aria-current='page'] { color: var(--ink); }
+  nav a[aria-current='page']::after { background: var(--accent); transform: scaleX(1); }
+
+  @media (max-width: 34rem) {
+    nav { gap: var(--space-sm); }
     nav ul { gap: var(--space-sm); }
+    .wordmark span { display: none; }
   }
 </style>

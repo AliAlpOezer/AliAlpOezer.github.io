@@ -1,0 +1,471 @@
+---
+/**
+ * Quiet Field - the animated background.
+ *
+ * Renders no markup of its own. Include it once on a page; it attaches a
+ * canvas to every element carrying `data-field`, which is why with scripting
+ * off there is no canvas element at all rather than an empty one.
+ *
+ * The reference is keremkeptig.info: floating nodes with lines drawn between
+ * near neighbours. That look is the brief. Three things make this read as a
+ * field rather than as a gas:
+ *
+ *   1. Velocity is the curl of one divergence-free Perlin potential, so
+ *      neighbouring nodes lean the SAME way and the streams rearrange over
+ *      ~90s. Per-node random velocity with wall bounce - the usual
+ *      implementation - has no coherence between neighbours.
+ *   2. Three depth layers each curve around their own off-screen centre, and
+ *      the middle one turns the other way. Counter-rotation is what makes the
+ *      parallax legible without speeding anything up. Rotation is applied as a
+ *      VELOCITY term, never by rotating stored positions - position-rotation
+ *      slowly drains the composition out of one corner.
+ *   3. Size and opacity fall off with depth.
+ *
+ * And it is cheap, which is the part that is not visible: a counting-sort
+ * spatial hash over typed arrays, squared-distance rejects, degree capped at
+ * 5, and link alpha quantised into six buckets so a frame is six
+ * beginPath/stroke pairs instead of one per segment. Measured at ~1.2ms/frame.
+ *
+ * Colours come from the token layer (--field-*) and are re-read on theme
+ * change, so the field follows the theme toggle without a second palette.
+ */
+---
+
+<style is:global>
+  .field-host { position: relative; isolation: isolate; }
+  .field-host > *:not(.qf) { position: relative; z-index: 1; }
+  .qf {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.9s var(--ease);
+  }
+  .qf[data-ready='true'] { opacity: 1; }
+  /* On a tile band the section's own colour flip is the divider, so the field
+     can end at the edge. On the page ground the next section is the same
+     colour, so an unmasked canvas ends in a visible horizontal cut - the
+     field has to dissolve instead. */
+  .field-host:not(.band--tile) .qf {
+    -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 94%);
+    mask-image: linear-gradient(to bottom, #000 58%, transparent 94%);
+  }
+</style>
+
+<script>
+  const REDUCE = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const R = 140, R2 = R * R, DEG = 5, OVER = 100;
+  const DOT_R = [2.4, 1.6, 1.0];
+  const SPEED = [7, 5, 3];                            // px/s, near -> far
+  const ROT = [                                       // centre as a fraction of W,H; deg/s
+    { fx: 1.18, fy: -0.22, w: 0.32 },
+    { fx: -0.30, fy: 0.55, w: -0.20 },                // counter-rotating
+    { fx: 0.50, fy: 1.85, w: 0.11 },
+  ];
+  const CURL_F = 0.0018, CURL_T = 0.00008, EPS = 1, THETA = 1.2;
+  const PTR_R = 140, PTR_MAX = 12;
+
+  /* Perlin improved noise, 3D. Inline rather than a package: invariant 4
+     forbids a third-party origin at runtime, and this is 40 lines. */
+  const PERM = (() => {
+    const base = new Uint8Array(256), p = new Uint8Array(512);
+    for (let i = 0; i < 256; i++) base[i] = i;
+    let s = 1337;                                     // fixed seed: same field every load
+    for (let i = 255; i > 0; i--) {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      const j = s % (i + 1), t = base[i]; base[i] = base[j]; base[j] = t;
+    }
+    for (let i = 0; i < 512; i++) p[i] = base[i & 255];
+    return p;
+  })();
+  const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+  const lerp = (a: number, b: number, t: number) => a + t * (b - a);
+  function grad(h: number, x: number, y: number, z: number) {
+    h &= 15;
+    const u = h < 8 ? x : y;
+    const v = h < 4 ? y : (h === 12 || h === 14 ? x : z);
+    return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+  }
+  function noise(x: number, y: number, z: number) {
+    const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
+    x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+    const u = fade(x), v = fade(y), w = fade(z);
+    const A = PERM[X] + Y, AA = PERM[A & 255] + Z, AB = PERM[(A + 1) & 255] + Z;
+    const B = PERM[(X + 1) & 255] + Y, BA = PERM[B & 255] + Z, BB = PERM[(B + 1) & 255] + Z;
+    return lerp(
+      lerp(lerp(grad(PERM[AA & 255], x, y, z), grad(PERM[BA & 255], x - 1, y, z), u),
+           lerp(grad(PERM[AB & 255], x, y - 1, z), grad(PERM[BB & 255], x - 1, y - 1, z), u), v),
+      lerp(lerp(grad(PERM[(AA + 1) & 255], x, y, z - 1), grad(PERM[(BA + 1) & 255], x - 1, y, z - 1), u),
+           lerp(grad(PERM[(AB + 1) & 255], x, y - 1, z - 1), grad(PERM[(BB + 1) & 255], x - 1, y - 1, z - 1), u), v),
+      w);
+  }
+
+  class Field {
+    host: HTMLElement;
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    n = 0;
+    w = 0; h = 0; dpr = 1;
+    t = 0;
+    visible = false;
+    ptr = { on: false, x: 0, y: 0 };
+    conf: any = {};
+    x!: Float32Array; y!: Float32Array; vx!: Float32Array; vy!: Float32Array;
+    ox!: Float32Array; oy!: Float32Array;
+    layer!: Uint8Array; deg!: Uint8Array; cell!: Int32Array; order!: Int32Array;
+    starts!: Int32Array; cursor!: Int32Array;
+    seg!: Float32Array[]; segN!: Int32Array; acc!: Float32Array;
+    sprites: { c: HTMLCanvasElement; size: number; half: number }[] = [];
+    centres!: { x: number; y: number; w: number }[];
+    domW = 0; domH = 0; cols = 0; rows = 0; ncells = 0;
+
+    constructor(host: HTMLElement) {
+      this.host = host;
+      this.canvas = document.createElement('canvas');
+      this.canvas.className = 'qf';
+      this.canvas.setAttribute('aria-hidden', 'true');
+      host.prepend(this.canvas);
+      this.ctx = this.canvas.getContext('2d')!;
+      this.readTokens();
+      this.allocate();
+      host.addEventListener('pointermove', (e) => {
+        const r = this.canvas.getBoundingClientRect();
+        this.ptr.on = true;
+        this.ptr.x = e.clientX - r.left;
+        this.ptr.y = e.clientY - r.top;
+        boost = performance.now() + 800;              // 60fps while interacting
+      }, { passive: true });
+      host.addEventListener('pointerleave', () => { this.ptr.on = false; }, { passive: true });
+      this.resize();
+      this.canvas.dataset.ready = 'true';
+    }
+
+    /* Colours live in the token layer so the field follows the theme toggle
+       instead of carrying a second palette that could drift from it. */
+    readTokens() {
+      const cs = getComputedStyle(this.host);
+      const num = (k: string, d: number) => {
+        const v = parseFloat(cs.getPropertyValue(k));
+        return Number.isFinite(v) ? v : d;
+      };
+      const str = (k: string, d: string) => cs.getPropertyValue(k).trim() || d;
+      this.conf = {
+        line: str('--field-line', '0,0,0'),
+        dot: str('--field-dot', '0,0,0'),
+        lineAlpha: num('--field-line-a', 0.16),
+        dotAlpha: [num('--field-dot-near', 0.28), num('--field-dot-mid', 0.18), num('--field-dot-far', 0.1)],
+        accent: str('--field-accent', '0,102,204'),
+        accentAlpha: num('--field-accent-a', 0.22),
+        total: Math.round(num('--field-count', 190) * (this.host.dataset.field === 'sparse' ? 0.7 : 1)),
+      };
+    }
+
+    allocate() {
+      const n = this.n = this.conf.total;
+      this.x = new Float32Array(n); this.y = new Float32Array(n);
+      this.vx = new Float32Array(n); this.vy = new Float32Array(n);
+      this.ox = new Float32Array(n); this.oy = new Float32Array(n);
+      this.layer = new Uint8Array(n);
+      this.deg = new Uint8Array(n);
+      this.cell = new Int32Array(n);
+      this.order = new Int32Array(n);
+      const split = [Math.round(n * 0.24), Math.round(n * 0.37)];
+      for (let i = 0; i < n; i++) this.layer[i] = i < split[0] ? 0 : i < split[0] + split[1] ? 1 : 2;
+      this.seg = Array.from({ length: 6 }, () => new Float32Array(n * DEG * 4));
+      this.segN = new Int32Array(6);
+      this.acc = new Float32Array(15);
+    }
+
+    resize() {
+      const r = this.host.getBoundingClientRect();
+      const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+      /* DPR is clamped: clearRect over a full-bleed retina backing store is the
+         dominant per-frame cost, and nobody can see 2x on a 1px hairline. */
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      const first = this.w === 0;
+      const reseed = first || Math.abs(w / h - this.w / this.h) / (this.w / this.h) > 0.25;
+      if (!first && !reseed) {
+        const sx = w / this.w, sy = h / this.h;
+        for (let i = 0; i < this.n; i++) { this.x[i] *= sx; this.y[i] *= sy; }
+      }
+      this.w = w; this.h = h; this.dpr = dpr;
+      this.canvas.width = Math.round(w * dpr);
+      this.canvas.height = Math.round(h * dpr);
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.ctx.lineWidth = Math.round(1 * dpr) / dpr;  // exactly one device pixel
+      this.ctx.lineCap = 'round';
+      this.domW = w + OVER * 2; this.domH = h + OVER * 2;
+      this.cols = Math.max(1, Math.ceil(this.domW / R));
+      this.rows = Math.max(1, Math.ceil(this.domH / R));
+      this.ncells = this.cols * this.rows;
+      this.starts = new Int32Array(this.ncells + 1);
+      this.cursor = new Int32Array(this.ncells + 1);
+      this.centres = ROT.map((o) => ({ x: o.fx * w, y: o.fy * h, w: (o.w * Math.PI) / 180 }));
+      this.sprite();
+      if (reseed) this.seed();
+    }
+
+    sprite() {
+      this.sprites = DOT_R.map((rad, i) => {
+        const pad = 1, size = (rad + pad) * 2;
+        const c = document.createElement('canvas');
+        c.width = c.height = Math.ceil(size * this.dpr);
+        const g = c.getContext('2d')!;
+        g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        const m = size / 2, col = this.conf.dot, a = this.conf.dotAlpha[i];
+        /* Alpha is baked in so the dot pass runs at globalAlpha 1 and never
+           touches ctx state per node. */
+        const grd = g.createRadialGradient(m, m, 0, m, m, rad + pad);
+        grd.addColorStop(0, `rgba(${col},${a})`);
+        grd.addColorStop(rad / (rad + pad), `rgba(${col},${a})`);
+        grd.addColorStop(1, `rgba(${col},0)`);
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(m, m, rad + pad, 0, Math.PI * 2); g.fill();
+        return { c, size, half: m };
+      });
+    }
+
+    /* Best-candidate sampling. Not polish: curl noise is divergence-free, so
+       it PRESERVES density - a field seeded with clumps stays clumpy forever,
+       and clumps are the ugliest failure on a light ground. */
+    seed() {
+      for (let i = 0; i < this.n; i++) {
+        let bx = 0, by = 0, bd = -1;
+        for (let t = 0, tries = i === 0 ? 1 : 10; t < tries; t++) {
+          const cx = -OVER + Math.random() * this.domW, cy = -OVER + Math.random() * this.domH;
+          let near = Infinity;
+          for (let j = 0; j < i; j++) {
+            const dx = cx - this.x[j], dy = cy - this.y[j], d = dx * dx + dy * dy;
+            if (d < near) near = d;
+          }
+          if (near > bd) { bd = near; bx = cx; by = cy; }
+        }
+        this.x[i] = bx; this.y[i] = by;
+        this.vx[i] = this.vy[i] = this.ox[i] = this.oy[i] = 0;
+      }
+    }
+
+    step(dt: number) {
+      this.t += dt * 1000;
+      const k = 1 - Math.exp(-THETA * dt), tz = this.t * CURL_T;
+      const p = this.ptr;
+      for (let i = 0; i < this.n; i++) {
+        const L = this.layer[i], x = this.x[i], y = this.y[i];
+        /* curl of a scalar potential: (dPsi/dy, -dPsi/dx) */
+        const n0 = noise(x * CURL_F, y * CURL_F, tz);
+        const nx = noise((x + EPS) * CURL_F, y * CURL_F, tz);
+        const ny = noise(x * CURL_F, (y + EPS) * CURL_F, tz);
+        let cx = (ny - n0) / EPS, cy = -(nx - n0) / EPS;
+        const len = Math.hypot(cx, cy) || 1, sp = SPEED[L];
+        let tx = (cx / len) * sp, ty = (cy / len) * sp;
+        const c = this.centres[L];
+        tx += -c.w * (y - c.y);
+        ty += c.w * (x - c.x);
+        this.vx[i] += (tx - this.vx[i]) * k;
+        this.vy[i] += (ty - this.vy[i]) * k;
+        let px = x + this.vx[i] * dt, py = y + this.vy[i] * dt;
+        /* toroidal wrap on the overscanned domain: wraps happen off-canvas */
+        if (px < -OVER) px += this.domW; else if (px > this.w + OVER) px -= this.domW;
+        if (py < -OVER) py += this.domH; else if (py > this.h + OVER) py -= this.domH;
+        this.x[i] = px; this.y[i] = py;
+
+        let ox = 0, oy = 0;
+        if (p.on) {
+          const dx = px + this.ox[i] - p.x, dy = py + this.oy[i] - p.y, d = Math.hypot(dx, dy);
+          if (d < PTR_R && d > 0.001) {
+            const u = 1 - d / PTR_R, s = u * u * (3 - 2 * u);  // smoothstep to zero at the edge
+            ox = (dx / d) * s * PTR_MAX; oy = (dy / d) * s * PTR_MAX;
+          }
+        }
+        this.ox[i] += (ox - this.ox[i]) * k;
+        this.oy[i] += (oy - this.oy[i]) * k;
+      }
+    }
+
+    draw() {
+      const ctx = this.ctx, c = this.conf, n = this.n;
+      ctx.clearRect(0, 0, this.w, this.h);
+
+      const starts = this.starts, cursor = this.cursor, order = this.order;
+      const cols = this.cols, rows = this.rows;
+      starts.fill(0);
+      for (let i = 0; i < n; i++) {
+        let cx = ((this.x[i] + this.ox[i] + OVER) / R) | 0;
+        let cy = ((this.y[i] + this.oy[i] + OVER) / R) | 0;
+        if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1;
+        if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1;
+        const cell = cy * cols + cx;
+        this.cell[i] = cell; starts[cell + 1]++;
+      }
+      for (let i = 1; i <= this.ncells; i++) starts[i] += starts[i - 1];
+      cursor.set(starts);
+      for (let i = 0; i < n; i++) order[cursor[this.cell[i]]++] = i;
+
+      this.deg.fill(0); this.segN.fill(0);
+      const acc = this.acc; let accN = 0;
+      const pOn = this.ptr.on, px = this.ptr.x, py = this.ptr.y;
+
+      for (let i = 0; i < n; i++) {
+        if (this.deg[i] >= DEG) continue;
+        const xi = this.x[i] + this.ox[i], yi = this.y[i] + this.oy[i];
+        const ci = this.cell[i], cxi = ci % cols, cyi = (ci / cols) | 0;
+        for (let gy = cyi - 1; gy <= cyi + 1; gy++) {
+          if (gy < 0 || gy >= rows) continue;
+          for (let gx = cxi - 1; gx <= cxi + 1; gx++) {
+            if (gx < 0 || gx >= cols) continue;
+            const cell = gy * cols + gx, end = starts[cell + 1];
+            for (let s = starts[cell]; s < end; s++) {
+              const j = order[s];
+              if (j <= i) continue;                    // dedupe for free
+              if (this.deg[i] >= DEG || this.deg[j] >= DEG) continue;
+              const xj = this.x[j] + this.ox[j], yj = this.y[j] + this.oy[j];
+              const dx = xj - xi, dy = yj - yi, d2 = dx * dx + dy * dy;
+              if (d2 > R2) continue;                   // no sqrt on the reject path
+              const d = Math.sqrt(d2), f = 1 - d / R;
+              let b = (f * 6) | 0; if (b > 5) b = 5;
+              const arr = this.seg[b], o = this.segN[b] * 4;
+              arr[o] = xi; arr[o + 1] = yi; arr[o + 2] = xj; arr[o + 3] = yj;
+              this.segN[b]++; this.deg[i]++; this.deg[j]++;
+              if (pOn) {
+                const md = Math.hypot((xi + xj) * 0.5 - px, (yi + yj) * 0.5 - py);
+                if (accN < 3 || md < acc[(accN - 1) * 5]) {
+                  let q = Math.min(accN, 2);
+                  while (q > 0 && acc[(q - 1) * 5] > md) { acc.copyWithin(q * 5, (q - 1) * 5, q * 5 + 5); q--; }
+                  acc[q * 5] = md; acc[q * 5 + 1] = xi; acc[q * 5 + 2] = yi;
+                  acc[q * 5 + 3] = xj; acc[q * 5 + 4] = yj;
+                  if (accN < 3) accN++;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      /* Six draw calls, whatever the segment count. Distance-faded link alpha
+         is a continuous float, and applying it per segment defeats batching
+         entirely - that is how the usual implementation reaches ~450 stroke
+         calls a frame. Quantise into buckets instead. */
+      ctx.strokeStyle = `rgb(${c.line})`;
+      for (let b = 0; b < 6; b++) {
+        const count = this.segN[b];
+        if (!count) continue;
+        ctx.globalAlpha = c.lineAlpha * (b + 0.5) / 6;
+        ctx.beginPath();
+        const arr = this.seg[b];
+        for (let s = 0, o = 0; s < count; s++, o += 4) {
+          ctx.moveTo(arr[o], arr[o + 1]); ctx.lineTo(arr[o + 2], arr[o + 3]);
+        }
+        ctx.stroke();
+      }
+      if (accN) {
+        ctx.globalAlpha = c.accentAlpha;
+        ctx.strokeStyle = `rgb(${c.accent})`;
+        ctx.beginPath();
+        for (let q = 0; q < accN; q++) {
+          ctx.moveTo(acc[q * 5 + 1], acc[q * 5 + 2]);
+          ctx.lineTo(acc[q * 5 + 3], acc[q * 5 + 4]);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < n; i++) {
+        const sp = this.sprites[this.layer[i]];
+        ctx.drawImage(sp.c, this.x[i] + this.ox[i] - sp.half, this.y[i] + this.oy[i] - sp.half,
+                      sp.size, sp.size);
+      }
+    }
+
+    destroy() { this.canvas.remove(); }
+  }
+
+  /* --- one shared driver, ticking only what is on screen --- */
+  let fields: Field[] = [], raf = 0, last = 0, acc = 0, boost = 0;
+  let io: IntersectionObserver | null = null, ro: ResizeObserver | null = null, roT = 0;
+
+  function frame(now: number) {
+    raf = requestAnimationFrame(frame);
+    if (!last) last = now;
+    acc += now - last;
+    last = now;
+    /* 30ms, not 33.3: a 33.3ms threshold against 16.67ms rAF ticks is
+       razor-thin and drops every other frame into a visible stutter. */
+    if (acc < (now < boost ? 8 : 30)) return;
+    const dt = Math.min(acc, 50) / 1000;   // clamp on resume so it cannot teleport
+    acc = 0;
+    for (const f of fields) if (f.visible) { f.step(dt); f.draw(); }
+  }
+
+  function sync() {
+    const want = !document.hidden && fields.some((f) => f.visible);
+    if (want && !raf) { last = 0; acc = 0; raf = requestAnimationFrame(frame); }
+    else if (!want && raf) { cancelAnimationFrame(raf); raf = 0; }
+  }
+
+  function build() {
+    if (fields.length || REDUCE.matches) return;
+    const hosts = [...document.querySelectorAll<HTMLElement>('[data-field]')];
+    if (!hosts.length) return;
+    hosts.forEach((h) => h.classList.add('field-host'));
+    fields = hosts.map((h) => new Field(h));
+
+    io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const f = fields.find((q) => q.host === e.target);
+        if (f) f.visible = e.isIntersecting;
+      }
+      sync();
+    }, { rootMargin: '200px 0px' });
+
+    /* A section's height is not final at construction time - the webfonts land
+       afterwards and reflow the copy, leaving the backing store sized to a
+       stale box. document.fonts.ready alone still misses later reflows. */
+    ro = new ResizeObserver(() => {
+      if (roT) return;
+      roT = requestAnimationFrame(() => {
+        roT = 0;
+        for (const f of fields) {
+          const r = f.host.getBoundingClientRect();
+          if (Math.round(r.width) !== f.w || Math.round(r.height) !== f.h) { f.resize(); f.draw(); }
+        }
+      });
+    });
+
+    fields.forEach((f) => { io!.observe(f.host); ro!.observe(f.host); f.step(0); f.draw(); });
+  }
+
+  function teardown() {
+    io?.disconnect(); io = null;
+    ro?.disconnect(); ro = null;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    fields.forEach((f) => f.destroy());
+    fields = [];
+  }
+
+  /* Under reduced motion this renders NOTHING, not a frozen frame: a static
+     0.16-alpha constellation with no motion to explain it reads as dirt. */
+  build();
+  REDUCE.addEventListener('change', () => (REDUCE.matches ? teardown() : build()));
+  document.addEventListener('visibilitychange', sync);
+
+  /* Follow the theme toggle: re-read the tokens and rebuild the sprites. */
+  const repaint = () => {
+    for (const f of fields) { f.readTokens(); f.sprite(); f.draw(); }
+  };
+  new MutationObserver(repaint).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme'],
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', repaint);
+
+  let winT: number;
+  addEventListener('resize', () => {
+    clearTimeout(winT);
+    winT = window.setTimeout(() => fields.forEach((f) => { f.resize(); f.draw(); }), 150);
+  });
+
+  if (location.search.includes('qfdebug')) (window as any).__qf = { fields: () => fields, raf: () => raf };
+</script>

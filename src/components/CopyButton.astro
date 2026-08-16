@@ -1,0 +1,69 @@
+---
+interface Props {
+  value: string;
+  label?: string;
+}
+const { value, label = 'Copy' } = Astro.props;
+---
+
+<button class="copy" type="button" data-copy={value} data-label={label}>
+  <span class="copy-label">{label}</span>
+</button>
+
+<script>
+  /* Reverts itself, and reports failure honestly rather than claiming success:
+     a clipboard write rejects on an insecure origin or a denied permission, and
+     silently pretending it worked is worse than the button not existing. */
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('.copy')) {
+    const label = btn.querySelector<HTMLElement>('.copy-label');
+    if (!label) continue;
+    const original = btn.dataset.label || 'Copy';
+    let revert: number;
+
+    btn.addEventListener('click', async () => {
+      clearTimeout(revert);
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy || '');
+        btn.dataset.state = 'done';
+        label.textContent = 'Copied';
+      } catch {
+        btn.dataset.state = 'fail';
+        label.textContent = 'Press ⌘C';
+      }
+      revert = window.setTimeout(() => {
+        delete btn.dataset.state;
+        label.textContent = original;
+      }, 1600);
+    });
+  }
+</script>
+
+<style>
+  .copy {
+    font-size: var(--text-sm);
+    cursor: pointer;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 9999px;
+    padding: 0.3125rem 0.8125rem;
+    min-height: 34px;
+    transition: color var(--t-base) var(--ease-out),
+                border-color var(--t-base) var(--ease-out),
+                transform var(--t-fast) var(--ease-out);
+  }
+  .copy:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .copy:active { transform: scale(0.97); }
+
+  /* The confirmation is the button becoming the accent and saying what
+     happened. No toast, no icon that needs explaining. */
+  .copy[data-state='done'] { color: var(--accent); border-color: var(--accent); }
+  .copy[data-state='fail'] { color: var(--ink-faint); border-color: var(--ink-faint); }
+
+  :global(.band--tile) .copy { color: var(--on-tile-mute); border-color: var(--rule-dark); }
+  :global(.band--tile) .copy:hover { color: var(--on-tile); border-color: var(--on-tile-mute); }
+  :global(.band--tile) .copy[data-state='done'] {
+    color: var(--accent-lift);
+    border-color: var(--accent-lift);
+  }
+</style>

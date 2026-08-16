@@ -90,7 +90,7 @@ const { href, title, meta, summary, tags = [], badge } = Astro.props;
     display: flex;
     align-items: baseline;
     gap: var(--space-2xs);
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-2xs);
     letter-spacing: 0.04em;
     color: var(--ink-faint);
@@ -127,7 +127,7 @@ const { href, title, meta, summary, tags = [], badge } = Astro.props;
   }
 
   .tag {
-    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-2xs);
     color: var(--ink-muted);
     background: var(--paper-sunk);

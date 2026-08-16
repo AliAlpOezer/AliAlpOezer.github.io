@@ -2,35 +2,47 @@
    Design tokens - the only place a raw colour or size is written.
    Everything else in the site references these. If you find a
    hex code or a px value anywhere in a component, it is a bug.
+
+   Direction C, "Quiet". Apple lineage: deference, one accent, no
+   decorative gradients, one shadow recipe. Rhythm comes from
+   full-bleed section flips where the colour change IS the divider.
+   A single family at two optical registers, the way SF Pro
+   Display / SF Pro Text works.
    ============================================================ */
 
 :root {
   /* ---- type families -------------------------------------- */
-  --font-display: "Newsreader", ui-serif, "Iowan Old Style",
-                  "Palatino Linotype", Georgia, serif;
-  --font-body:    "Inter", ui-sans-serif, system-ui, -apple-system,
+  --font-body:    "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
                   "Segoe UI", Roboto, sans-serif;
+  /* Display and body are the same family on purpose. The identity is
+     carried by tracking and weight, not by a second typeface. */
+  --font-display: var(--font-body);
   --font-mono:    ui-monospace, "Cascadia Code", "SF Mono", Menlo,
                   "DejaVu Sans Mono", monospace;
 
-  /* ---- fluid type scale (1.25 minor third, 20rem -> 80rem) -- */
+  /* ---- fluid type scale ----------------------------------- */
   --text-2xs:  0.6875rem;
   --text-xs:   0.75rem;
   --text-sm:   0.8125rem;
-  --text-base: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --text-base: 1.0625rem;
   --text-md:   clamp(1.0625rem, 1.02rem + 0.22vw, 1.1875rem);
-  --text-lg:   clamp(1.25rem, 1.16rem + 0.45vw, 1.5rem);
-  --text-xl:   clamp(1.5rem, 1.32rem + 0.9vw, 2rem);
-  --text-2xl:  clamp(1.875rem, 1.5rem + 1.9vw, 2.75rem);
-  --text-3xl:  clamp(2.5rem, 1.6rem + 4.5vw, 4.75rem);
+  --text-lg:   clamp(1.1875rem, 1.1rem + 0.4vw, 1.375rem);
+  --text-xl:   clamp(1.3125rem, 1.2rem + 0.6vw, 1.625rem);
+  --text-2xl:  clamp(1.9rem, 1.4rem + 2.4vw, 3.1rem);
+  --text-3xl:  clamp(2.75rem, 1.1rem + 6.6vw, 6.75rem);
 
-  --leading-tight: 1.06;
-  --leading-snug:  1.28;
-  --leading-body:  1.65;
+  --leading-tight: 1.03;
+  --leading-snug:  1.08;
+  --leading-body:  1.47;
 
-  --tracking-display: -0.028em;
-  --tracking-tight:   -0.015em;
-  --tracking-label:    0.14em;
+  /* Tracking tightens as size grows. This is the whole identity, and the
+     measured behaviour of apple.com: about -0.28px at a 56px hero against
+     -0.374px at 17px body. */
+  --tracking-display: -0.042em;
+  --tracking-head:    -0.03em;
+  --tracking-tight:   -0.02em;
+  --tracking-body:    -0.011em;
+  --tracking-label:    0.02em;
 
   /* ---- space scale ---------------------------------------- */
   --space-3xs: 0.25rem;
@@ -42,70 +54,145 @@
   --space-xl:  3rem;
   --space-2xl: clamp(3rem, 7vh, 4.5rem);
   --space-3xl: clamp(4rem, 12vh, 8rem);
+  /* The vertical rhythm of a full-bleed band. */
+  --section:   clamp(5rem, 11vh, 7.5rem);
 
   /* ---- measure & layout ----------------------------------- */
-  --measure:      34rem;   /* body copy, ~68 characters */
-  --measure-wide: 42rem;
-  --page:         62rem;
-  --gutter:       clamp(1.25rem, 4vw, 2rem);
+  --measure:      34rem;
+  --measure-wide: 46rem;
+  --page:         70rem;
+  --gutter:       clamp(1.25rem, 5vw, 2.5rem);
 
-  /* ---- motion --------------------------------------------- */
+  /* ---- motion ---------------------------------------------
+     One vocabulary, from the timing research in
+     docs/context/interaction-inventory.md. */
   --ease:      cubic-bezier(0.22, 0.68, 0.24, 1);
-  --dur-fast:  0.25s;
-  --dur-base:  0.45s;
+  --ease-out:  cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in:   cubic-bezier(0.4, 0, 0.7, 0.2);
+  --t-fast:    120ms;   /* press: mechanical */
+  --t-base:    220ms;   /* hover colour, border, opacity */
+  --t-slow:    380ms;   /* position and size */
+  --dur-fast:  var(--t-base);
+  --dur-base:  var(--t-slow);
   --dur-slow:  0.7s;
 
-  --radius-sm: 3px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
 
-  /* ---- colour: LIGHT is the base definition ---------------- */
-  --paper:        oklch(0.985 0.004 92);
-  --paper-sunk:   oklch(0.962 0.006 92);
-  --paper-raised: oklch(1 0 0);
-  --ink:          oklch(0.22 0.015 265);
-  --ink-muted:    oklch(0.50 0.012 265);
-  --ink-faint:    oklch(0.66 0.010 265);
-  --rule:         oklch(0.90 0.006 92);
-  --rule-strong:  oklch(0.22 0.015 265);
-  --accent:       oklch(0.48 0.16 258);
-  --accent-sunk:  oklch(0.94 0.03 258);
-  --selection:    oklch(0.88 0.06 258);
-  --shadow-color: 265 15% 20%;
+  /* ---- colour: LIGHT is the base definition ----------------
+     Three grounds, not two: the page, a sunk band, and a full-bleed
+     near-black tile. The tile is a first-class surface here, not a
+     dark-mode artefact - the homepage flips into it twice. */
+  --paper:        #ffffff;
+  --paper-sunk:   #f5f5f7;
+  --paper-raised: #ffffff;
+  --tile:         #1d1d1f;
+  --on-tile:      #f5f5f7;
+  --on-tile-mute: #a1a1a6;
+
+  --ink:          #1d1d1f;
+  --ink-muted:    #6e6e73;
+  --ink-faint:    #a1a1a6;
+  --rule:         #d2d2d7;
+  --rule-dark:    #3a3a3c;
+  --rule-strong:  #1d1d1f;
+
+  --accent:       #0066cc;
+  --accent-lift:  #2997ff;   /* the accent as it reads on the tile */
+  --accent-sunk:  #e8f1fb;
+  --positive:     #1d7f4a;
+  --selection:    #cfe3fa;
+
+  /* One shadow recipe for the whole site. */
+  --shadow-product: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+  --shadow-color:   265 15% 20%;
+
+  /* Background field, read by QuietField.astro. */
+  --field-line:    0, 0, 0;
+  --field-dot:     0, 0, 0;
+  --field-line-a:  0.16;
+  --field-accent:  0, 102, 204;
+  --field-accent-a: 0.22;
+  --field-dot-near: 0.28;
+  --field-dot-mid:  0.18;
+  --field-dot-far:  0.10;
+  --field-count:    190;
 }
 
-/* Dark tokens are declared twice on purpose:
-   once for "system says dark and the user has not overridden",
-   once for "the user explicitly chose dark". Never define a colour
-   only inside one of these blocks. */
+/* Dark tokens are declared twice on purpose: once for "system says dark and
+   the user has not overridden", once for "the user explicitly chose dark".
+   Never define a colour only inside one of these blocks.
+
+   Dark here is not an inversion - it is the tile register the light theme
+   already uses for its full-bleed bands, promoted to the whole page. That is
+   why it needs no separate design: it is already on the homepage. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper:        oklch(0.175 0.012 265);
-    --paper-sunk:   oklch(0.215 0.014 265);
-    --paper-raised: oklch(0.225 0.015 265);
-    --ink:          oklch(0.94 0.005 92);
-    --ink-muted:    oklch(0.70 0.012 265);
-    --ink-faint:    oklch(0.55 0.012 265);
-    --rule:         oklch(0.30 0.014 265);
-    --rule-strong:  oklch(0.94 0.005 92);
-    --accent:       oklch(0.78 0.13 250);
-    --accent-sunk:  oklch(0.28 0.05 258);
-    --selection:    oklch(0.35 0.08 258);
+    --paper:        #1d1d1f;
+    --paper-sunk:   #161617;
+    --paper-raised: #262628;
+    --tile:         #000000;
+    --on-tile:      #f5f5f7;
+    --on-tile-mute: #86868b;
+
+    --ink:          #f5f5f7;
+    --ink-muted:    #a1a1a6;
+    --ink-faint:    #6e6e73;
+    --rule:         #3a3a3c;
+    --rule-dark:    #48484a;
+    --rule-strong:  #f5f5f7;
+
+    --accent:       #2997ff;
+    --accent-lift:  #2997ff;
+    --accent-sunk:  #0a2540;
+    --positive:     #30d158;
+    --selection:    #0a3d6b;
+
     --shadow-color: 265 40% 4%;
+
+    --field-line:   255, 255, 255;
+    --field-dot:    255, 255, 255;
+    --field-line-a: 0.13;
+    --field-accent: 41, 151, 255;
+    --field-accent-a: 0.26;
+    --field-dot-near: 0.34;
+    --field-dot-mid:  0.20;
+    --field-dot-far:  0.12;
+    --field-count:    150;
   }
 }
 
 :root[data-theme="dark"] {
-  --paper:        oklch(0.175 0.012 265);
-  --paper-sunk:   oklch(0.215 0.014 265);
-  --paper-raised: oklch(0.225 0.015 265);
-  --ink:          oklch(0.94 0.005 92);
-  --ink-muted:    oklch(0.70 0.012 265);
-  --ink-faint:    oklch(0.55 0.012 265);
-  --rule:         oklch(0.30 0.014 265);
-  --rule-strong:  oklch(0.94 0.005 92);
-  --accent:       oklch(0.78 0.13 250);
-  --accent-sunk:  oklch(0.28 0.05 258);
-  --selection:    oklch(0.35 0.08 258);
+  --paper:        #1d1d1f;
+  --paper-sunk:   #161617;
+  --paper-raised: #262628;
+  --tile:         #000000;
+  --on-tile:      #f5f5f7;
+  --on-tile-mute: #86868b;
+
+  --ink:          #f5f5f7;
+  --ink-muted:    #a1a1a6;
+  --ink-faint:    #6e6e73;
+  --rule:         #3a3a3c;
+  --rule-dark:    #48484a;
+  --rule-strong:  #f5f5f7;
+
+  --accent:       #2997ff;
+  --accent-lift:  #2997ff;
+  --accent-sunk:  #0a2540;
+  --positive:     #30d158;
+  --selection:    #0a3d6b;
+
   --shadow-color: 265 40% 4%;
+
+  --field-line:   255, 255, 255;
+  --field-dot:    255, 255, 255;
+  --field-line-a: 0.13;
+  --field-accent: 41, 151, 255;
+  --field-accent-a: 0.26;
+  --field-dot-near: 0.34;
+  --field-dot-mid:  0.20;
+  --field-dot-far:  0.12;
+  --field-count:    150;
 }

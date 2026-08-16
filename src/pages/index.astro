@@ -1,111 +1,454 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import IndexRow from '../components/IndexRow.astro';
+import QuietField from '../components/QuietField.astro';
+import RunPanel from '../components/RunPanel.astro';
+import StackField from '../components/StackField.astro';
+import CopyButton from '../components/CopyButton.astro';
 import { SITE } from '../consts';
+import { METHOD, FIGURES } from '../data/home';
 
-const projects = (await getCollection('projects', ({ data }) => !data.draft && data.featured))
+const projects = (await getCollection('projects', ({ data }) => !data.draft))
   .sort((a, b) => a.data.order - b.data.order);
 
+const featured = projects.filter((p) => p.data.featured);
+const grid = featured.length >= 6 ? featured : projects.slice(0, 6);
+
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
-  .slice(0, 3);
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+const latest = posts[0];
 
-const fmt = (d: Date) =>
-  d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+const journey = (await getCollection('journey', ({ data }) => !data.draft))
+  .sort((a, b) => a.data.start.getTime() - b.data.start.getTime());
 
-const statusBadge = (s: string) => (s === 'live' ? 'Live' : undefined);
+/* The stack display aggregates every shipped project's stack, then the
+   explored tier is added inside the component. Built here because only the
+   page has the collection. */
+const byTech = new Map<string, { title: string; id: string }[]>();
+for (const p of projects) {
+  for (const tech of p.data.stack) {
+    if (!byTech.has(tech)) byTech.set(tech, []);
+    byTech.get(tech)!.push({ title: p.data.title, id: p.id });
+  }
+}
+const shipped = [...byTech.entries()]
+  .map(([name, projects]) => ({ name, projects }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+const railLabel = (d: Date, end?: Date) =>
+  !end && d.getFullYear() >= new Date().getFullYear()
+    ? `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`
+    : String(d.getFullYear());
+
+const fmtDate = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
+
 <Base title={`${SITE.name} · ${SITE.role}`} bareTitle>
-  <div class="wrap">
+  <QuietField />
 
-    <section class="hero">
-      <p class="label eyebrow">{SITE.role} <span aria-hidden="true">·</span> {SITE.location}</p>
-      <h1>I build AI systems that hold up <em>in production</em>.</h1>
-      <p class="lede">
-        Retrieval pipelines, autonomous agents, and the evaluation harnesses that prove
-        they actually work. Three years shipping enterprise software on an SAP Innovation
-        Award-winning team, now specialised in applied AI.
+  <section class="hero" data-field>
+    <div class="wrap">
+      <p class="eyebrow intro">{SITE.role} <span aria-hidden="true">&middot;</span> {SITE.location}</p>
+      <h1 class="intro">Agents that can prove they worked.</h1>
+      <p class="lede intro">
+        Retrieval pipelines, autonomous agents, and the evaluation harnesses that show what
+        they actually do. Built by hand, so every part of them is mine to measure.
       </p>
-      <div class="hero-links">
-        <a class="link" href="/work">Selected work</a>
-        <a class="link" href={`mailto:${SITE.email}`}>Get in touch</a>
-        <a class="link" href={SITE.github} rel="noopener">GitHub</a>
-      </div>
-    </section>
+      <p class="hero-meta intro">
+        <span>Currently building Sage &amp; Advocate</span>
+        <span>Previously Flexus, 2023&ndash;2026</span>
+        <span>MSc Wirtschaftsinformatik, TUM, from October</span>
+      </p>
+    </div>
+  </section>
 
-    <section>
-      <div class="sec-head">
+  <section class="band" id="work">
+    <div class="wrap">
+      <div class="band-head reveal">
         <h2>Selected work</h2>
-        <a href="/work">All projects &rarr;</a>
+        <a class="arw" href="/work">All projects</a>
       </div>
-      <ul class="index">
-        {projects.map((p) => (
-          <IndexRow
-            href={`/work/${p.id}`}
-            title={p.data.title}
-            meta={`${p.data.stack[0]} · ${p.data.period}`}
-            badge={statusBadge(p.data.status)}
-            summary={p.data.summary}
-            tags={p.data.stack.slice(0, 4)}
-          />
+      <div class="grid reveal" id="work-grid">
+        {grid.map((p) => (
+          <article class="card" data-stack={p.data.stack.join('|')}>
+            <div class="card-top">
+              <h3>
+                <a href={`/work/${p.id}`}>{p.data.title}</a>
+              </h3>
+              <span class="status" data-s={p.data.status}>{p.data.status}</span>
+            </div>
+            <p>{p.data.tagline ?? p.data.summary}</p>
+            <p class="tags">
+              {p.data.stack.map((t) => <span class="tag" data-tag={t}>{t}</span>)}
+            </p>
+          </article>
         ))}
-      </ul>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    {posts.length > 0 && (
-      <section>
-        <div class="sec-head">
-          <h2>Writing</h2>
-          <a href="/writing">All posts &rarr;</a>
+  <section class="band band--tile" id="run">
+    <div class="wrap">
+      <div class="band-head">
+        <div>
+          <p class="eyebrow">Anatomy of a run</p>
+          <h2>Six stages. The model owns one.</h2>
         </div>
-        <ul class="index">
-          {posts.map((p) => (
-            <IndexRow
-              href={`/writing/${p.id}`}
-              title={p.data.title}
-              meta={fmt(p.data.pubDate)}
-              summary={p.data.description}
-            />
-          ))}
-        </ul>
-      </section>
-    )}
+      </div>
+      <RunPanel
+        system="munich-apartment-agent"
+        cadence="cycle every 3h · systemd timer"
+        store="SQLite"
+      />
+    </div>
+  </section>
 
-  </div>
+  <section class="band band--sunk" id="stack">
+    <div class="wrap">
+      <StackField shipped={shipped} />
+    </div>
+  </section>
+
+  <section class="band" id="method">
+    <div class="wrap">
+      <div class="band-head reveal">
+        <div>
+          <p class="eyebrow">How I work</p>
+          <h2>Method, not inventory.</h2>
+        </div>
+      </div>
+      {/* Exactly four entries, so the grid is 2x2 rather than auto-fit. An
+          auto-fit grid left empty cells at wide widths and the 1px hairline
+          background showed through them as a grey block. */}
+      <div class="method reveal">
+        {METHOD.map((m, i) => (
+          <div class="mth">
+            <span class="n">{String(i + 1).padStart(2, '0')}</span>
+            <h3>{m.title}</h3>
+            <p>{m.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="band band--sunk" id="journey">
+    <div class="wrap">
+      <div class="band-head reveal">
+        <div>
+          <p class="eyebrow">Journey</p>
+          <h2>Ankara to München, the long way.</h2>
+        </div>
+        <a class="arw" href="/journey">Full timeline</a>
+      </div>
+      <div class="jr">
+        <nav class="jr-rail" aria-label="Timeline">
+          {journey.map((j, i) => (
+            <a href={`#jr-${i}`} data-i={i} data-on={i === 0 ? 'true' : undefined}>
+              {railLabel(j.data.start, j.data.end)}
+            </a>
+          ))}
+        </nav>
+        <ol class="jr-list">
+          {journey.map((j, i) => (
+            <li class="jr-item" id={`jr-${i}`} data-i={i}>
+              <span class="jr-when">{j.data.period}</span>
+              <h3>{j.data.title}</h3>
+              <p class="jr-org">{j.data.org}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  {latest && (
+    <section class="band" id="writing">
+      <div class="wrap">
+        <div class="band-head reveal">
+          <h2>Writing</h2>
+          <a class="arw" href="/writing">All posts</a>
+        </div>
+        <a class="post reveal" href={`/writing/${latest.id}`}>
+          <span class="when">
+            {fmtDate(latest.data.pubDate)}
+            {latest.data.tags.length > 0 && ` · ${latest.data.tags.join(', ')}`}
+          </span>
+          <h3>{latest.data.title}</h3>
+          <p>{latest.data.description}</p>
+          <span class="go arw">Read it</span>
+        </a>
+      </div>
+    </section>
+  )}
+
+  <section class="band band--tile" data-field="sparse">
+    <div class="wrap">
+      <div class="figs reveal">
+        {FIGURES.map((f) => (
+          <div class="fig">
+            <b>{f.value}</b>
+            <p class="small">{f.note}</p>
+          </div>
+        ))}
+      </div>
+      <div class="hail reveal">
+        <h2>If you are hiring for this, I would like to hear from you.</h2>
+        <div class="links">
+          <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+          <CopyButton value={SITE.email} />
+          <a href={SITE.github} rel="noopener">GitHub</a>
+          <a href={SITE.linkedin} rel="noopener">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </section>
 </Base>
 
+<script>
+  /* Pointer spotlight on the work grid and the method cards. The one effect
+     carried over from the atmospheric mockup, at lower intensity and
+     achromatic enough to read as light rather than as glow. */
+  for (const host of document.querySelectorAll<HTMLElement>('#work-grid, .method')) {
+    host.addEventListener('pointermove', (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>('.card, .mth');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      el.style.setProperty('--my', `${e.clientY - r.top}px`);
+    }, { passive: true });
+  }
+
+  /* Journey rail. The items tile the list contiguously, so exactly one always
+     crosses the centre band - no gap handling needed here, unlike the run. */
+  const rail = [...document.querySelectorAll<HTMLElement>('.jr-rail a')];
+  const items = document.querySelectorAll<HTMLElement>('.jr-item');
+  if (rail.length && items.length) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const i = Number((e.target as HTMLElement).dataset.i);
+        rail.forEach((a, j) => { a.dataset.on = String(j === i); });
+      }
+    }, { rootMargin: '-45% 0px -45% 0px' });
+    items.forEach((el) => io.observe(el));
+  }
+</script>
+
 <style>
-  .hero { padding-block: var(--space-3xl) var(--space-2xl); }
-
-  .eyebrow { margin-bottom: var(--space-md); }
-
-  h1 {
-    font-size: var(--text-3xl);
-    line-height: var(--leading-tight);
-    letter-spacing: var(--tracking-display);
-    font-weight: 500;
-    max-width: 18ch;
-  }
-  h1 em { font-style: italic; color: var(--accent); }
-
-  .lede {
-    max-width: var(--measure);
-    margin-top: var(--space-md);
-    color: var(--ink-muted);
-    font-size: var(--text-md);
-  }
-
-  .hero-links {
+  .hero { padding-block: clamp(4.5rem, 14vh, 9rem) var(--section); }
+  .hero h1 { max-width: 15ch; }
+  .hero .lede { margin-top: var(--space-lg); }
+  .hero-meta {
     display: flex;
-    gap: var(--space-md);
-    margin-top: var(--space-lg);
     flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-top: var(--space-2xl);
     font-size: var(--text-sm);
+    color: var(--ink-faint);
   }
 
-  section { padding-block: var(--space-2xl); }
-  section:last-of-type { padding-bottom: var(--space-xl); }
+  /* ---------- work grid + pointer spotlight ---------- */
+  .grid {
+    display: grid;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    isolation: isolate;
+  }
+  .card {
+    position: relative;
+    background: var(--paper);
+    padding: var(--space-lg) 1.75rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 15rem;
+    transition: opacity var(--t-slow) var(--ease-out);
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity var(--t-slow) var(--ease-out);
+    background: radial-gradient(16rem 16rem at var(--mx) var(--my),
+                rgb(0 102 204 / 0.07), transparent 68%);
+  }
+  .grid:hover .card::before { opacity: 1; }
+  .card > * { position: relative; z-index: 1; }
+  .card[data-dim='true'] { opacity: 0.26; }
 
-  .index { list-style: none; margin: 0; padding: 0; }
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+  .card h3 { font-size: var(--text-lg); }
+  /* No lift on hover: the grid is one hairline-separated surface and raising a
+     cell tears the seam it shares with its neighbours. The affordance is
+     carried by the title instead. The arrow is positioned out of flow -
+     laying it out inline reserves width even at opacity 0, which was enough
+     to wrap a long title onto a second line while its neighbours stayed on one. */
+  .card h3 a {
+    position: relative;
+    text-decoration: none;
+    transition: color var(--t-base) var(--ease-out);
+  }
+  .card h3 a::after {
+    content: '\2192';
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 0.3125rem;
+    font-size: 0.875em;
+    opacity: 0;
+    transform: translateX(-5px);
+    transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+  }
+  .card:hover h3 a { color: var(--accent); }
+  .card:hover h3 a::after { opacity: 1; transform: none; }
+
+  .status {
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    flex: none;
+  }
+  .status[data-s='live'] { color: var(--positive); }
+  .card > p { margin-top: var(--space-xs); color: var(--ink-muted); font-size: var(--text-sm); }
+  .tags {
+    margin-top: auto;
+    padding-top: var(--space-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3xs);
+  }
+  .tag {
+    font-size: var(--text-2xs);
+    color: var(--ink-muted);
+    border: 1px solid var(--rule);
+    border-radius: 9999px;
+    padding: 0.1875rem 0.5rem;
+    transition: border-color var(--t-base) var(--ease-out), color var(--t-base) var(--ease-out);
+  }
+  .tag[data-hit='true'] { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- method ---------- */
+  .method {
+    display: grid;
+    gap: 1px;
+    background: var(--rule);
+    border-block: 1px solid var(--rule);
+    grid-template-columns: minmax(0, 1fr);
+    isolation: isolate;
+  }
+  @media (min-width: 52rem) { .method { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .mth { position: relative; background: var(--paper); padding: 2.25rem 1.75rem var(--space-lg); }
+  .mth::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity var(--t-slow) var(--ease-out);
+    background: radial-gradient(15rem 15rem at var(--mx) var(--my),
+                rgb(0 102 204 / 0.06), transparent 68%);
+  }
+  .method:hover .mth::before { opacity: 1; }
+  .mth > * { position: relative; z-index: 1; }
+  .mth .n {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: var(--space-sm);
+  }
+  .mth h3 { font-size: var(--text-lg); }
+  .mth p { margin-top: var(--space-xs); color: var(--ink-muted); font-size: var(--text-sm); }
+
+  /* ---------- journey rail ---------- */
+  .jr { display: grid; gap: var(--space-2xl); }
+  @media (min-width: 58rem) { .jr { grid-template-columns: 13rem minmax(0, 1fr); gap: var(--space-3xl); } }
+  .jr-rail {
+    position: sticky;
+    top: 5rem;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .jr-rail a {
+    display: block;
+    padding: 0.375rem 0 0.375rem var(--space-2xs);
+    font-size: var(--text-sm);
+    color: var(--ink-faint);
+    text-decoration: none;
+    border-left: 2px solid var(--rule);
+    font-variant-numeric: tabular-nums;
+    transition: color var(--t-slow) var(--ease-out), border-color var(--t-slow) var(--ease-out);
+  }
+  .jr-rail a[data-on='true'] { color: var(--ink); border-left-color: var(--accent); }
+  .jr-list { list-style: none; margin: 0; padding: 0; }
+  .jr-item { padding-block: 2.25rem; border-top: 1px solid var(--rule); }
+  .jr-item:first-child { border-top: 0; padding-top: 0; }
+  .jr-when { font-size: var(--text-sm); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .jr-item h3 { margin-top: var(--space-2xs); font-size: var(--text-lg); }
+  /* Needs the extra class: a bare `.jr-org` loses to `.jr-item p`. */
+  .jr-item .jr-org { margin-top: var(--space-3xs); font-size: var(--text-sm); color: var(--accent); }
+
+  /* ---------- writing ---------- */
+  .post {
+    display: block;
+    text-decoration: none;
+    border-block: 1px solid var(--rule);
+    padding-block: var(--space-2xl);
+    transition: padding-left var(--t-slow) var(--ease-out);
+  }
+  .post:hover { padding-left: var(--space-xs); }
+  .post .when { font-size: var(--text-sm); color: var(--ink-faint); }
+  .post h3 { margin-top: var(--space-2xs); font-size: var(--text-2xl); letter-spacing: var(--tracking-head); }
+  .post > p { margin-top: var(--space-xs); color: var(--ink-muted); max-width: var(--measure-wide); }
+  .post .go { margin-top: var(--space-sm); }
+
+  /* ---------- closing ---------- */
+  .figs {
+    display: grid;
+    gap: var(--space-2xl);
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    margin-bottom: var(--space-3xl);
+  }
+  .fig { border-top: 1px solid var(--rule-dark); padding-top: var(--space-sm); }
+  .fig b {
+    display: block;
+    font-size: 2.25rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-head);
+  }
+  .hail h2 { max-width: 18ch; }
+  .hail .links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm) var(--space-md);
+    margin-top: var(--space-lg);
+  }
+  .hail .links a {
+    font-size: var(--text-md);
+    color: var(--accent-lift);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    transition: border-color var(--t-base) var(--ease-out);
+  }
+  .hail .links a:hover { border-bottom-color: currentColor; }
 </style>
