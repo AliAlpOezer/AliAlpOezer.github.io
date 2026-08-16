@@ -1,0 +1,77 @@
+---
+import { SITE, NAV } from '../consts';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname;
+const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
+---
+<header class="site-head">
+  <div class="wrap bar">
+    <a class="wordmark" href="/">{SITE.name}</a>
+    <nav aria-label="Main">
+      <ul>
+        {NAV.map(({ href, label }) => (
+          <li>
+            <a href={href} aria-current={isCurrent(href) ? 'page' : undefined}>{label}</a>
+          </li>
+        ))}
+      </ul>
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-head { padding-block: var(--space-lg) 0; }
+
+  .bar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  nav { display: flex; align-items: baseline; gap: var(--space-md); }
+
+  nav ul {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-md);
+    list-style: none;
+    padding: 0;
+  }
+
+  nav a {
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  nav a:hover { color: var(--ink); }
+
+  /* The current section is stated, not just coloured, so it survives
+     both themes and screen readers. */
+  nav a[aria-current='page'] { color: var(--ink); }
+  nav a[aria-current='page']::after {
+    content: '';
+    display: block;
+    height: 1px;
+    margin-top: 3px;
+    background: var(--accent);
+  }
+
+  @media (max-width: 30rem) {
+    nav { gap: var(--space-sm); width: 100%; justify-content: space-between; }
+    nav ul { gap: var(--space-sm); }
+  }
+</style>

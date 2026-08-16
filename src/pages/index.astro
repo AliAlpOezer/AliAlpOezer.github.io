@@ -1,0 +1,111 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import IndexRow from '../components/IndexRow.astro';
+import { SITE } from '../consts';
+
+const projects = (await getCollection('projects', ({ data }) => !data.draft && data.featured))
+  .sort((a, b) => a.data.order - b.data.order);
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 3);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+
+const statusBadge = (s: string) => (s === 'live' ? 'Live' : undefined);
+---
+<Base title={`${SITE.name} · ${SITE.role}`} bareTitle>
+  <div class="wrap">
+
+    <section class="hero">
+      <p class="label eyebrow">{SITE.role} <span aria-hidden="true">·</span> {SITE.location}</p>
+      <h1>I build AI systems that hold up <em>in production</em>.</h1>
+      <p class="lede">
+        Retrieval pipelines, autonomous agents, and the evaluation harnesses that prove
+        they actually work. Three years shipping enterprise software on an SAP Innovation
+        Award-winning team, now specialised in applied AI.
+      </p>
+      <div class="hero-links">
+        <a class="link" href="/work">Selected work</a>
+        <a class="link" href={`mailto:${SITE.email}`}>Get in touch</a>
+        <a class="link" href={SITE.github} rel="noopener">GitHub</a>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>Selected work</h2>
+        <a href="/work">All projects &rarr;</a>
+      </div>
+      <ul class="index">
+        {projects.map((p) => (
+          <IndexRow
+            href={`/work/${p.id}`}
+            title={p.data.title}
+            meta={`${p.data.stack[0]} · ${p.data.period}`}
+            badge={statusBadge(p.data.status)}
+            summary={p.data.summary}
+            tags={p.data.stack.slice(0, 4)}
+          />
+        ))}
+      </ul>
+    </section>
+
+    {posts.length > 0 && (
+      <section>
+        <div class="sec-head">
+          <h2>Writing</h2>
+          <a href="/writing">All posts &rarr;</a>
+        </div>
+        <ul class="index">
+          {posts.map((p) => (
+            <IndexRow
+              href={`/writing/${p.id}`}
+              title={p.data.title}
+              meta={fmt(p.data.pubDate)}
+              summary={p.data.description}
+            />
+          ))}
+        </ul>
+      </section>
+    )}
+
+  </div>
+</Base>
+
+<style>
+  .hero { padding-block: var(--space-3xl) var(--space-2xl); }
+
+  .eyebrow { margin-bottom: var(--space-md); }
+
+  h1 {
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    font-weight: 500;
+    max-width: 18ch;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+
+  .lede {
+    max-width: var(--measure);
+    margin-top: var(--space-md);
+    color: var(--ink-muted);
+    font-size: var(--text-md);
+  }
+
+  .hero-links {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    flex-wrap: wrap;
+    font-size: var(--text-sm);
+  }
+
+  section { padding-block: var(--space-2xl); }
+  section:last-of-type { padding-bottom: var(--space-xl); }
+
+  .index { list-style: none; margin: 0; padding: 0; }
+</style>

@@ -1,0 +1,84 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import '../../styles/prose.css';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const d = post.data;
+
+const long = (x: Date) =>
+  x.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+<Base
+  title={d.title}
+  description={d.description}
+  article={{ published: d.pubDate, updated: d.updated, tags: [...d.tags] }}
+>
+  <article class="wrap">
+    <header>
+      <p class="label"><a href="/writing">Writing</a></p>
+      <h1>{d.title}</h1>
+      <p class="standfirst">{d.description}</p>
+      <p class="byline">
+        <time datetime={d.pubDate.toISOString()}>{long(d.pubDate)}</time>
+        {d.updated && <> <span aria-hidden="true">·</span> updated <time datetime={d.updated.toISOString()}>{long(d.updated)}</time></>}
+        {d.tags.length > 0 && <> <span aria-hidden="true">·</span> {d.tags.join(', ')}</>}
+      </p>
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <nav class="tail">
+      <a class="link" href="/writing">&larr; All posts</a>
+    </nav>
+  </article>
+</Base>
+
+<style>
+  article { padding-block: var(--space-2xl) var(--space-xl); }
+  header { margin-bottom: var(--space-xl); }
+  header .label { margin-bottom: var(--space-sm); }
+  header .label a { color: inherit; text-decoration: none; }
+  header .label a:hover { color: var(--accent); }
+
+  h1 {
+    font-size: var(--text-2xl);
+    letter-spacing: var(--tracking-display);
+    line-height: var(--leading-snug);
+    max-width: 22ch;
+  }
+
+  .standfirst {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    color: var(--ink-muted);
+    max-width: var(--measure);
+    margin-top: var(--space-sm);
+    line-height: 1.4;
+  }
+
+  .byline {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--rule);
+  }
+
+  .tail {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--rule);
+    font-size: var(--text-sm);
+  }
+</style>

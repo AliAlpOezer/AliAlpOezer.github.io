@@ -1,0 +1,56 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import IndexRow from '../../components/IndexRow.astro';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const fmt = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+---
+<Base
+  title="Writing"
+  description="Notes on retrieval, agents, evaluation, and the parts of AI engineering that do not demo well."
+>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="label">Writing</p>
+      <h1>Notes on the parts that do not demo well.</h1>
+      <p class="lede">
+        Retrieval, agents, evaluation, and the unglamorous engineering that decides whether
+        any of it survives contact with production.
+      </p>
+    </header>
+
+    {posts.length === 0 ? (
+      <p class="empty">Nothing published yet.</p>
+    ) : (
+      <ul class="index">
+        {posts.map((p) => (
+          <IndexRow
+            href={`/writing/${p.id}`}
+            title={p.data.title}
+            meta={fmt(p.data.pubDate)}
+            summary={p.data.description}
+            tags={p.data.tags}
+          />
+        ))}
+      </ul>
+    )}
+  </div>
+</Base>
+
+<style>
+  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head .label { margin-bottom: var(--space-sm); }
+  h1 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+    max-width: 20ch;
+  }
+  .lede { max-width: var(--measure); margin-top: var(--space-md); color: var(--ink-muted); }
+  .index { list-style: none; margin: 0 0 var(--space-2xl); padding: 0; }
+  .index :global(.item):first-child { border-top: 1px solid var(--rule-strong); }
+  .empty { color: var(--ink-muted); padding-block: var(--space-lg) var(--space-2xl); }
+</style>

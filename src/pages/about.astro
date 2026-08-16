@@ -1,0 +1,111 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../consts';
+import '../styles/prose.css';
+---
+<Base
+  title="About"
+  description="Ali Alp Özer: AI engineer in Munich, three languages deep, reskilling from enterprise software into applied AI."
+>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="label">About</p>
+      <h1>I am an engineer who keeps starting over, on purpose.</h1>
+    </header>
+
+    <div class="prose">
+      <p>
+        I am Ali Alp Özer. I build AI systems in Munich: retrieval pipelines, autonomous
+        agents, and the evaluation harnesses that decide whether either of those is working.
+      </p>
+
+      <p>
+        Before that I spent three years at Flexus AG in Würzburg building enterprise software
+        in SAP CAP, on a product that won an international SAP Innovation Award. I owned the
+        backend architecture, the fleet management cockpit, and eventually the roadmap for
+        it. It was a good job and I learned the thing that most AI content skips entirely:
+        what it takes for software to survive in front of people who did not choose it and
+        cannot work around it.
+      </p>
+
+      <h2>Why I left a good job to start again</h2>
+
+      <p>
+        Because I could see which half of my skills was going to matter in ten years, and it
+        was not the half I was being paid for.
+      </p>
+
+      <p>
+        So in June 2026 I put myself through a sixteen-week program of my own design: LLM
+        applications, retrieval, agents, evaluation, fine-tuning. Not a course with a
+        certificate at the end. A syllabus where every block has to end in a repository that
+        runs. That constraint is why <a href="/work/sage">Sage</a> has a hand-labelled golden
+        set instead of a demo, and why the
+        <a href="/work/munich-apartment-agent">Munich Apartment Agent</a> has durable
+        checkpointing instead of a screenshot.
+      </p>
+
+      <h2>What I actually care about</h2>
+
+      <p>
+        The unglamorous half. Anyone can get a language model to produce something impressive
+        once. The engineering is in the second time, and the thousandth, when the input is
+        malformed and the API is down and the model has quietly started making things up.
+      </p>
+
+      <p>
+        That is why almost everything I build has an evaluation harness in it, usually one
+        that took longer than the thing it measures. A system whose output you cannot check
+        is not a system, it is a demo with good lighting.
+      </p>
+
+      <blockquote>
+        <p>Success is observed, not claimed. Exit code zero is necessary and not sufficient.</p>
+      </blockquote>
+
+      <h2>Three languages, three countries</h2>
+
+      <p>
+        I learned German at school in Turkey, arrived in Germany at B2, and reached C2 within
+        a year. Then I completed an entire Bachelor's degree in it. English I learned properly
+        during the preparation year at ODTÜ, where I had been admitted after placing in the
+        top 0.15% nationally in the Turkish university entrance examination. Turkish is my
+        first language.
+      </p>
+
+      <p>
+        None of that was a straight line and I have stopped pretending it should have been.
+        Changing university, changing country, changing field: each one cost time and each
+        one is the reason I can do something now that I could not do before. The
+        <a href="/journey">journey page</a> has the actual sequence if you want it.
+      </p>
+
+      <h2>Where this goes next</h2>
+
+      <p>
+        I start an MSc in Wirtschaftsinformatik at the Technical University of Munich this
+        October, to push the formal side of what I have been teaching myself: the mathematics
+        under the models rather than the APIs on top of them. Alongside it I am building
+        <a href="/work/advocate">Advocate</a>, which is the most opinionated thing I have
+        made, and continuing to write down what I learn.
+      </p>
+
+      <p>
+        If you are hiring for AI engineering work, or you have something hard and
+        badly-specified that needs building, <a href={`mailto:${SITE.email}`}>write to me</a>.
+      </p>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head .label { margin-bottom: var(--space-sm); }
+  h1 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+    max-width: 22ch;
+  }
+  .prose { padding-bottom: var(--space-2xl); }
+</style>

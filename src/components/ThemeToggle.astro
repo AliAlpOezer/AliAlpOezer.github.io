@@ -1,0 +1,63 @@
+---
+/**
+ * Three-state theme control: system (default), light, dark.
+ *
+ * Rendered as a plain button with a static label so it is meaningful
+ * before the script runs. Without JavaScript the site still renders in
+ * whichever theme the OS asks for; only the override is lost.
+ */
+---
+<button id="theme-toggle" type="button" aria-live="polite">
+  <span class="visually-hidden">Colour theme:</span>
+  <span data-label>Theme</span>
+</button>
+
+<style>
+  button {
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: color var(--dur-fast) var(--ease);
+  }
+  button:hover { color: var(--ink); }
+</style>
+
+<script>
+  const btn = document.getElementById('theme-toggle');
+  const label = btn?.querySelector('[data-label]');
+  const root = document.documentElement;
+
+  type Mode = 'system' | 'light' | 'dark';
+  const ORDER: Mode[] = ['system', 'light', 'dark'];
+  const TEXT: Record<Mode, string> = { system: 'System', light: 'Light', dark: 'Dark' };
+
+  const read = (): Mode => {
+    try {
+      const v = localStorage.getItem('theme');
+      return v === 'light' || v === 'dark' ? v : 'system';
+    } catch {
+      return 'system';
+    }
+  };
+
+  const apply = (mode: Mode) => {
+    if (mode === 'system') delete root.dataset.theme;
+    else root.dataset.theme = mode;
+    try {
+      if (mode === 'system') localStorage.removeItem('theme');
+      else localStorage.setItem('theme', mode);
+    } catch {}
+    if (label) label.textContent = TEXT[mode];
+  };
+
+  apply(read());
+
+  btn?.addEventListener('click', () => {
+    const next = ORDER[(ORDER.indexOf(read()) + 1) % ORDER.length];
+    apply(next);
+  });
+</script>

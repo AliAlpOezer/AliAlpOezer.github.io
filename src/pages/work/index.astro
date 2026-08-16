@@ -1,0 +1,58 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import IndexRow from '../../components/IndexRow.astro';
+
+const projects = (await getCollection('projects', ({ data }) => !data.draft))
+  .sort((a, b) => a.data.order - b.data.order);
+
+const statusBadge = (s: string) =>
+  s === 'live' ? 'Live' : s === 'building' ? 'In progress' : undefined;
+---
+<Base
+  title="Work"
+  description="AI systems, retrieval pipelines and autonomous agents built by Ali Alp Özer."
+>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="label">Work</p>
+      <h1>Things I have built, and what they taught me.</h1>
+      <p class="lede">
+        Each of these has a write-up rather than a link straight to a repository. The
+        interesting part of a project is rarely the code; it is the constraint that decided
+        the shape of it, and what happened when that constraint met reality.
+      </p>
+    </header>
+
+    <ul class="index">
+      {projects.map((p) => (
+        <IndexRow
+          href={`/work/${p.id}`}
+          title={p.data.title}
+          meta={`${p.data.stack[0]} · ${p.data.period}`}
+          badge={statusBadge(p.data.status)}
+          summary={p.data.summary}
+          tags={p.data.stack}
+        />
+      ))}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head .label { margin-bottom: var(--space-sm); }
+  h1 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+    max-width: 20ch;
+  }
+  .lede {
+    max-width: var(--measure);
+    margin-top: var(--space-md);
+    color: var(--ink-muted);
+  }
+  .index { list-style: none; margin: 0 0 var(--space-2xl); padding: 0; }
+  .index :global(.item):first-child { border-top: 1px solid var(--rule-strong); }
+</style>

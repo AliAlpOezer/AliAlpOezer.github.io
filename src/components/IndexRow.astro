@@ -1,0 +1,144 @@
+---
+/**
+ * The site's signature element: a row in a ruled index list.
+ *
+ * Used for both projects and posts. On hover the whole row slides right
+ * and a short accent rule draws in from the left. That is the only
+ * decorative motion on the site, and it is suppressed under
+ * prefers-reduced-motion and on narrow screens where it has nowhere to go.
+ */
+interface Props {
+  href: string;
+  title: string;
+  /** Right-aligned mono metadata, e.g. "LangGraph · 2026". */
+  meta?: string;
+  summary?: string;
+  tags?: readonly string[];
+  /** Renders a small pill before the metadata. */
+  badge?: string;
+}
+const { href, title, meta, summary, tags = [], badge } = Astro.props;
+---
+<li class="item">
+  <a class="row" href={href}>
+    <h3>{title}</h3>
+    {(meta || badge) && (
+      <span class="meta">
+        {badge && <span class="badge">{badge}</span>}
+        {meta}
+      </span>
+    )}
+    {summary && <p>{summary}</p>}
+    {tags.length > 0 && (
+      <ul class="tags">
+        {tags.map((t) => <li class="tag">{t}</li>)}
+      </ul>
+    )}
+  </a>
+</li>
+
+<style>
+  .item { border-bottom: 1px solid var(--rule); list-style: none; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-2xs) var(--space-lg);
+    align-items: baseline;
+    padding: var(--space-md) 0 calc(var(--space-md) + 0.1rem);
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    transition: padding-left var(--dur-base) var(--ease);
+  }
+
+  .row::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 50%;
+    width: 0.9rem;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0;
+    transition: transform var(--dur-base) var(--ease),
+                opacity var(--dur-fast) var(--ease);
+  }
+
+  .row:hover,
+  .row:focus-visible { padding-left: 1.5rem; }
+  .row:hover::before,
+  .row:focus-visible::before { transform: scaleX(1); opacity: 1; }
+
+  h3 {
+    grid-column: 1;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.2;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .row:hover h3,
+  .row:focus-visible h3 { color: var(--accent); }
+
+  .meta {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2xs);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .badge {
+    color: var(--accent);
+    border: 1px solid currentcolor;
+    border-radius: 20px;
+    padding: 0.05rem 0.4rem;
+    font-size: var(--text-2xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  p {
+    grid-column: 1;
+    margin: var(--space-3xs) 0 0;
+    max-width: var(--measure);
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+  }
+
+  .tags {
+    grid-column: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3xs) 0.45rem;
+    margin: var(--space-xs) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--ink-muted);
+    background: var(--paper-sunk);
+    padding: 0.18rem 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+
+  @media (max-width: 40rem) {
+    .row { grid-template-columns: 1fr; }
+    .meta { grid-column: 1; grid-row: auto; text-align: left; justify-content: flex-start; }
+    .row:hover, .row:focus-visible { padding-left: 0; }
+    .row::before { display: none; }
+  }
+</style>

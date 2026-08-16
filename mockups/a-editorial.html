@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup A - Editorial</title>
+<style>
+  :root {
+    --paper:      oklch(0.985 0.004 92);
+    --paper-sunk: oklch(0.962 0.006 92);
+    --ink:        oklch(0.22 0.015 265);
+    --ink-muted:  oklch(0.50 0.012 265);
+    --ink-faint:  oklch(0.66 0.010 265);
+    --rule:       oklch(0.90 0.006 92);
+    --accent:     oklch(0.48 0.16 258);
+    --accent-sunk:oklch(0.94 0.03 258);
+
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans:  ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
+    --mono:  ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+
+    --measure: 34rem;
+    --gap: clamp(1.25rem, 4vw, 2rem);
+    --ease: cubic-bezier(.22,.68,.24,1);
+  }
+  [data-theme="dark"] {
+    --paper:      oklch(0.175 0.012 265);
+    --paper-sunk: oklch(0.215 0.014 265);
+    --ink:        oklch(0.94 0.005 92);
+    --ink-muted:  oklch(0.70 0.012 265);
+    --ink-faint:  oklch(0.55 0.012 265);
+    --rule:       oklch(0.30 0.014 265);
+    --accent:     oklch(0.78 0.13 250);
+    --accent-sunk:oklch(0.28 0.05 258);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    transition: background .5s var(--ease), color .5s var(--ease);
+  }
+  .wrap { max-width: 62rem; margin-inline: auto; padding-inline: var(--gap); }
+
+  /* ---------- header ---------- */
+  header { padding-block: 2rem 0; }
+  .bar { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .wordmark { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; letter-spacing: -.01em; }
+  nav { display: flex; align-items: baseline; gap: 1.6rem; }
+  nav a, .toggle {
+    font-size: .875rem; color: var(--ink-muted); text-decoration: none;
+    background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--sans);
+    transition: color .25s var(--ease);
+  }
+  nav a:hover, .toggle:hover { color: var(--ink); }
+
+  /* ---------- hero ---------- */
+  .hero { padding-block: clamp(4rem, 12vh, 8rem) clamp(3rem, 8vh, 5rem); }
+  .eyebrow {
+    font-family: var(--mono); font-size: .75rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 1.75rem;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(2.6rem, 7.5vw, 4.9rem); line-height: 1.03;
+    letter-spacing: -.028em; margin: 0; max-width: 18ch;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .lede { max-width: var(--measure); margin: 2rem 0 0; color: var(--ink-muted); font-size: 1.075rem; }
+  .hero-links { display: flex; gap: 1.5rem; margin-top: 2.25rem; flex-wrap: wrap; }
+  .hero-links a {
+    font-size: .9rem; color: var(--ink); text-decoration: none;
+    border-bottom: 1px solid var(--rule); padding-bottom: 2px;
+    transition: border-color .25s var(--ease), color .25s var(--ease);
+  }
+  .hero-links a:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- section ---------- */
+  section { padding-block: clamp(3rem, 7vh, 4.5rem); }
+  .sec-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1rem; padding-bottom: 1.1rem; border-bottom: 1px solid var(--ink);
+  }
+  .sec-head h2 {
+    font-family: var(--mono); font-size: .75rem; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; margin: 0;
+  }
+  .sec-head a { font-size: .8rem; color: var(--ink-muted); text-decoration: none; }
+  .sec-head a:hover { color: var(--accent); }
+
+  /* ---------- index list: the signature element ---------- */
+  .index { list-style: none; margin: 0; padding: 0; }
+  .index li { border-bottom: 1px solid var(--rule); }
+  .row {
+    display: grid; grid-template-columns: 1fr auto; gap: .5rem 2rem;
+    align-items: baseline; padding: 1.6rem 0 1.7rem;
+    text-decoration: none; color: inherit; position: relative;
+    transition: padding-left .45s var(--ease);
+  }
+  .row::before {
+    content: ""; position: absolute; left: -1.5rem; top: 50%;
+    width: .9rem; height: 1px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left; opacity: 0;
+    transition: transform .45s var(--ease), opacity .3s var(--ease);
+  }
+  .row:hover { padding-left: 1.5rem; }
+  .row:hover::before { transform: scaleX(1); opacity: 1; }
+  .row h3 {
+    font-family: var(--serif); font-size: 1.5rem; font-weight: 500;
+    letter-spacing: -.015em; margin: 0; line-height: 1.2; grid-column: 1;
+    transition: color .3s var(--ease);
+  }
+  .row:hover h3 { color: var(--accent); }
+  .row .meta {
+    font-family: var(--mono); font-size: .72rem; color: var(--ink-faint);
+    letter-spacing: .04em; grid-column: 2; grid-row: 1; text-align: right; white-space: nowrap;
+  }
+  .row p { margin: .55rem 0 0; color: var(--ink-muted); font-size: .95rem;
+           max-width: var(--measure); grid-column: 1; }
+  .tags { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .85rem; grid-column: 1; }
+  .tag {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .03em;
+    color: var(--ink-muted); background: var(--paper-sunk);
+    padding: .18rem .5rem; border-radius: 3px;
+  }
+
+  /* ---------- now ---------- */
+  .now { display: grid; grid-template-columns: minmax(0,1fr); gap: 1.5rem; padding-top: 2rem; }
+  .now p { margin: 0; max-width: var(--measure); color: var(--ink-muted); }
+  .now strong { color: var(--ink); font-weight: 600; }
+
+  footer {
+    border-top: 1px solid var(--rule); margin-top: 4rem;
+    padding-block: 2.5rem 4rem;
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    font-size: .82rem; color: var(--ink-faint); font-family: var(--mono);
+  }
+  footer a { color: var(--ink-muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; }
+    .row .meta { grid-column: 1; grid-row: auto; text-align: left; }
+    .row:hover { padding-left: 0; }
+    .row::before { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="bar">
+      <a class="wordmark" href="/" style="color:inherit;text-decoration:none">Ali Alp Özer</a>
+      <nav>
+        <a href="#work">Work</a>
+        <a href="#writing">Writing</a>
+        <a href="#">Journey</a>
+        <a href="#">About</a>
+        <button class="toggle" id="t" aria-label="Toggle colour theme">Dark</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <p class="eyebrow">AI Engineer &nbsp;·&nbsp; München</p>
+      <h1>I build AI systems that hold up <em>in production</em>.</h1>
+      <p class="lede">
+        Retrieval pipelines, autonomous agents, and the evaluation harnesses that prove
+        they actually work. Three years shipping enterprise software on an SAP Innovation
+        Award-winning team, now specialised in applied AI. Starting an MSc at TUM this October.
+      </p>
+      <div class="hero-links">
+        <a href="#work">Selected work</a>
+        <a href="mailto:alialp@live.com">Get in touch</a>
+        <a href="https://github.com/AliAlpOezer">GitHub</a>
+        <a href="#">CV</a>
+      </div>
+    </div>
+
+    <section id="work">
+      <div class="sec-head"><h2>Selected work</h2><a href="#">All projects →</a></div>
+      <ul class="index">
+        <li><a class="row" href="#">
+          <h3>Advocate</h3><span class="meta">LangGraph · 2026</span>
+          <p>An application agent whose generator never writes facts. It selects claim IDs
+             from a graded evidence store and writes only the connective prose, so every
+             factual sentence traces back to something verified.</p>
+          <div class="tags"><span class="tag">LangGraph</span><span class="tag">Python</span><span class="tag">Human-in-the-loop</span></div>
+        </a></li>
+        <li><a class="row" href="#">
+          <h3>Sage</h3><span class="meta">Python · Qdrant · 2026</span>
+          <p>A RAG pipeline built from scratch over 4,800 chunks of documentation, on a
+             ports-and-adapters architecture where backends swap by config. A RAGAS harness
+             with a hand-labelled golden set means retrieval changes are measured, not guessed.</p>
+          <div class="tags"><span class="tag">RAG</span><span class="tag">Qdrant</span><span class="tag">RAGAS</span><span class="tag">FastAPI</span></div>
+        </a></li>
+        <li><a class="row" href="#">
+          <h3>Munich Apartment Agent</h3><span class="meta">LangGraph · in production</span>
+          <p>An autonomous agent running unattended every three hours: scrape, filter, dedup,
+             enrich, persist, notify. Durable checkpointing for crash-safe resumption, and a
+             feedback loop where Telegram reactions train a learned preference model.</p>
+          <div class="tags"><span class="tag">LangGraph</span><span class="tag">Supabase</span><span class="tag">systemd</span><span class="tag">Docker</span></div>
+        </a></li>
+        <li><a class="row" href="#">
+          <h3>Voice Scheduler</h3><span class="meta">TypeScript · MCP · 2026</span>
+          <p>A real-time German-language booking agent running voice end to end, from VAD
+             through STT and the LLM to TTS. One adapter interface serves both a restaurant
+             and a medical practice, negotiating capabilities per vertical.</p>
+          <div class="tags"><span class="tag">MCP</span><span class="tag">Whisper</span><span class="tag">ElevenLabs</span><span class="tag">Drizzle</span></div>
+        </a></li>
+        <li><a class="row" href="#">
+          <h3>YouTube MCP Server</h3><span class="meta">Python · open source</span>
+          <p>A published Model Context Protocol server that reflows fragmented caption data
+             into readable prose organised under the video's own chapter structure, so models
+             get authored structure instead of a flat wall of text.</p>
+          <div class="tags"><span class="tag">MCP</span><span class="tag">yt-dlp</span><span class="tag">Open source</span></div>
+        </a></li>
+      </ul>
+    </section>
+
+    <section id="writing">
+      <div class="sec-head"><h2>Writing</h2><a href="#">All posts →</a></div>
+      <ul class="index">
+        <li><a class="row" href="#">
+          <h3>Your RAG has no baseline</h3><span class="meta">Aug 2026</span>
+          <p>Most retrieval "improvements" are unfalsifiable. What it takes to build a golden
+             set small enough to hand-label and honest enough to trust.</p>
+        </a></li>
+        <li><a class="row" href="#">
+          <h3>The eval harness is the product</h3><span class="meta">Jul 2026</span>
+          <p>On shipping an agent to production and discovering the graph was the easy part.</p>
+        </a></li>
+        <li><a class="row" href="#">
+          <h3>What ports-and-adapters actually buys you</h3><span class="meta">Jun 2026</span>
+          <p>Swapping a vector store in one config line sounds like architecture astronautics
+             until the day you have to do it.</p>
+        </a></li>
+      </ul>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Now</h2><span class="meta" style="font-family:var(--mono);font-size:.72rem;color:var(--ink-faint)">August 2026</span></div>
+      <div class="now">
+        <p>Building <strong>Advocate's</strong> evidence-grounding layer, the part that makes
+           it structurally unable to invent a fact. Starting the <strong>MSc at TUM</strong>
+           in October. Working through fine-tuning as the final block of a self-directed
+           AI engineering program I have been building in public since June.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>München, Germany</span>
+    <span>
+      <a href="mailto:alialp@live.com">Email</a> ·
+      <a href="https://github.com/AliAlpOezer">GitHub</a> ·
+      <a href="https://linkedin.com/in/alialpozer">LinkedIn</a>
+    </span>
+  </footer>
+</div>
+
+<script>
+  const t = document.getElementById('t'), r = document.documentElement;
+  t.addEventListener('click', () => {
+    const dark = r.dataset.theme === 'dark';
+    r.dataset.theme = dark ? 'light' : 'dark';
+    t.textContent = dark ? 'Dark' : 'Light';
+  });
+</script>
+</body>
+</html>

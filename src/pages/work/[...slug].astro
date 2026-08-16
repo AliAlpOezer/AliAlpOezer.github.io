@@ -1,0 +1,124 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import '../../styles/prose.css';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects', ({ data }) => !data.draft);
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+
+const STATUS_TEXT: Record<string, string> = {
+  live: 'Running in production',
+  shipped: 'Shipped',
+  building: 'In progress',
+  archived: 'Archived',
+};
+---
+<Base title={d.title} description={d.summary}>
+  <article class="wrap">
+    <header>
+      <p class="label"><a href="/work">Work</a> <span aria-hidden="true">/</span> {d.period}</p>
+      <h1>{d.title}</h1>
+      {d.tagline && <p class="tagline">{d.tagline}</p>}
+
+      <dl class="facts">
+        <div>
+          <dt>Status</dt>
+          <dd>
+            {d.status === 'live' && <span class="dot" aria-hidden="true"></span>}
+            {STATUS_TEXT[d.status]}
+          </dd>
+        </div>
+        <div>
+          <dt>Stack</dt>
+          <dd>{d.stack.join(' · ')}</dd>
+        </div>
+        {(d.repo || d.demo) && (
+          <div>
+            <dt>Links</dt>
+            <dd class="links">
+              {d.repo && <a class="link" href={d.repo} rel="noopener">Source</a>}
+              {d.demo && <a class="link" href={d.demo} rel="noopener">Live</a>}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <nav class="tail">
+      <a class="link" href="/work">&larr; All projects</a>
+    </nav>
+  </article>
+</Base>
+
+<style>
+  article { padding-block: var(--space-2xl) var(--space-xl); }
+
+  header { margin-bottom: var(--space-xl); }
+  header .label { margin-bottom: var(--space-sm); }
+  header .label a { color: inherit; text-decoration: none; }
+  header .label a:hover { color: var(--accent); }
+
+  h1 {
+    font-size: var(--text-2xl);
+    letter-spacing: var(--tracking-display);
+    line-height: var(--leading-snug);
+  }
+
+  .tagline {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-style: italic;
+    color: var(--ink-muted);
+    max-width: var(--measure);
+    margin-top: var(--space-xs);
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md) var(--space-xl);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--rule);
+  }
+  .facts dt {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.3rem;
+  }
+  .facts dd { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); }
+  .facts .links { display: flex; gap: var(--space-sm); }
+
+  .dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 0.4rem;
+    vertical-align: baseline;
+  }
+
+  .tail {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--rule);
+    font-size: var(--text-sm);
+  }
+</style>

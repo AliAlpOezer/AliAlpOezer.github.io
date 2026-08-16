@@ -1,0 +1,77 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/prose.css';
+
+/**
+ * A /now page: what is true this month, dated so a reader can tell how stale it is.
+ * Update the date whenever you update the content, or do not bother having the page.
+ */
+const updated = new Date('2026-08-16');
+const long = updated.toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric',
+});
+---
+<Base title="Now" description="What Ali Alp Özer is working on this month.">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="label">Now</p>
+      <h1>What I am working on this month.</h1>
+      <p class="stamp">
+        Last updated <time datetime={updated.toISOString()}>{long}</time>
+      </p>
+    </header>
+
+    <div class="prose">
+      <p>
+        <strong>Building <a href="/work/advocate">Advocate's</a> evidence-grounding layer.</strong>
+        The graph that finds and scores postings works. What I am building now is the part
+        that makes the generator structurally unable to invent a fact: it may only select
+        claim IDs from a graded store and write the prose between them.
+      </p>
+
+      <p>
+        <strong>Starting the MSc at TUM in October.</strong> Sorting out the practical side
+        of moving to Munich properly, and reading ahead so the first semester is not a
+        standing start.
+      </p>
+
+      <p>
+        <strong>Fine-tuning, the last block.</strong> Final section of the sixteen-week
+        program I have been running since June. It is the block I have been least comfortable
+        with, which is presumably why it is worth doing.
+      </p>
+
+      <p>
+        <strong>Writing more.</strong> I have been building considerably faster than I have
+        been writing it down, and the writing is what makes any of it useful to someone else.
+      </p>
+
+      <hr />
+
+      <p class="foot">
+        This is a <a href="https://nownownow.com/about" rel="noopener">now page</a>. If it is
+        badly out of date, that is a fair thing to hold against me.
+      </p>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head .label { margin-bottom: var(--space-sm); }
+  h1 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+    max-width: 20ch;
+  }
+  .stamp {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-top: var(--space-sm);
+  }
+  .prose { padding-bottom: var(--space-2xl); }
+  .prose .foot { font-size: var(--text-sm); color: var(--ink-faint); }
+</style>

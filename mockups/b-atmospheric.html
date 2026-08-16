@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup B - Atmospheric</title>
+<style>
+  :root, [data-theme="dark"] {
+    --bg:        oklch(0.145 0.012 265);
+    --surface:   oklch(0.185 0.013 265);
+    --surface-2: oklch(0.225 0.015 265);
+    --text:      oklch(0.955 0.004 90);
+    --muted:     oklch(0.715 0.011 265);
+    --faint:     oklch(0.545 0.013 265);
+    --line:      oklch(0.275 0.014 265);
+    --accent:    oklch(0.805 0.135 78);
+    --accent-dim:oklch(0.62 0.10 78);
+    --glow:      oklch(0.805 0.135 78 / .16);
+  }
+  [data-theme="light"] {
+    --bg:        oklch(0.975 0.005 90);
+    --surface:   oklch(1 0 0);
+    --surface-2: oklch(0.955 0.006 90);
+    --text:      oklch(0.20 0.014 265);
+    --muted:     oklch(0.46 0.012 265);
+    --faint:     oklch(0.62 0.011 265);
+    --line:      oklch(0.90 0.006 90);
+    --accent:    oklch(0.55 0.14 62);
+    --accent-dim:oklch(0.68 0.12 62);
+    --glow:      oklch(0.55 0.14 62 / .10);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
+    font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+    transition: background .5s cubic-bezier(.22,.68,.24,1), color .5s cubic-bezier(.22,.68,.24,1);
+  }
+  /* one soft light source, top-centre. no particles, no blobs. */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(60rem 34rem at 50% -12rem, var(--glow), transparent 70%);
+  }
+  .wrap { max-width: 66rem; margin-inline: auto; padding-inline: clamp(1.25rem,4vw,2rem);
+          position: relative; z-index: 1; }
+  .mono { font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace; }
+
+  /* ---------- header ---------- */
+  header { padding-block: 1.6rem; position: sticky; top: 0; z-index: 20;
+           backdrop-filter: blur(12px); background: color-mix(in oklab, var(--bg) 82%, transparent);
+           border-bottom: 1px solid transparent; transition: border-color .3s; }
+  header.stuck { border-color: var(--line); }
+  .bar { max-width: 66rem; margin-inline: auto; padding-inline: clamp(1.25rem,4vw,2rem);
+         display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .wordmark { font-weight: 620; letter-spacing: -.02em; font-size: 1rem; color: var(--text); text-decoration: none; }
+  .wordmark span { color: var(--accent); }
+  nav { display: flex; align-items: center; gap: 1.5rem; }
+  nav a, .toggle { font-size: .865rem; color: var(--muted); text-decoration: none;
+    background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0;
+    transition: color .25s; }
+  nav a:hover, .toggle:hover { color: var(--text); }
+
+  /* ---------- hero ---------- */
+  .hero { padding-block: clamp(4.5rem, 13vh, 8.5rem) clamp(3rem, 8vh, 5rem); }
+  .eyebrow { font-size: .72rem; letter-spacing: .16em; text-transform: uppercase;
+             color: var(--accent); margin: 0 0 1.6rem; display: flex; align-items: center; gap: .6rem; }
+  .eyebrow::before { content:""; width:1.75rem; height:1px; background: var(--accent); opacity:.6; }
+  h1 { font-size: clamp(2.5rem, 7.2vw, 4.6rem); line-height: 1.04; letter-spacing: -.038em;
+       font-weight: 640; margin: 0; max-width: 17ch; }
+  h1 .hl { color: var(--accent); }
+  .lede { max-width: 36rem; margin: 1.9rem 0 0; color: var(--muted); font-size: 1.06rem; }
+  .cta { display: flex; gap: .75rem; margin-top: 2.4rem; flex-wrap: wrap; }
+  .btn { font-size: .89rem; font-weight: 550; padding: .6rem 1.15rem; border-radius: 8px;
+         text-decoration: none; transition: transform .25s cubic-bezier(.22,.68,.24,1), background .25s, border-color .25s; }
+  .btn-a { background: var(--accent); color: oklch(0.16 0.02 78); }
+  .btn-a:hover { transform: translateY(-2px); }
+  .btn-b { border: 1px solid var(--line); color: var(--text); }
+  .btn-b:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  /* ---------- sections ---------- */
+  section { padding-block: clamp(3rem, 7vh, 4.5rem); }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap:1rem;
+              margin-bottom: 1.75rem; }
+  .sec-head h2 { font-size: .73rem; letter-spacing: .16em; text-transform: uppercase;
+                 color: var(--faint); font-weight: 500; margin: 0; }
+  .sec-head a { font-size: .82rem; color: var(--muted); text-decoration: none; }
+  .sec-head a:hover { color: var(--accent); }
+
+  /* ---------- card grid with pointer spotlight: the signature element ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem,1fr)); gap: 1px;
+          background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .card { background: var(--surface); padding: 1.75rem 1.6rem 1.6rem; position: relative;
+          text-decoration: none; color: inherit; display: flex; flex-direction: column;
+          transition: background .35s; isolation: isolate; }
+  .card::before {
+    content: ""; position: absolute; inset: 0; opacity: 0; pointer-events: none; z-index: -1;
+    background: radial-gradient(16rem 16rem at var(--mx,50%) var(--my,50%),
+                color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%);
+    transition: opacity .4s;
+  }
+  .grid:hover .card::before { opacity: 1; }
+  .card:hover { background: var(--surface-2); }
+  .card h3 { font-size: 1.18rem; font-weight: 600; letter-spacing: -.018em; margin: 0 0 .2rem;
+             display: flex; align-items: center; gap: .5rem; }
+  .card:hover h3 { color: var(--accent); }
+  .card .meta { font-size: .7rem; letter-spacing: .05em; color: var(--faint); margin-bottom: .85rem; }
+  .card p { margin: 0 0 1.15rem; color: var(--muted); font-size: .92rem; flex: 1; }
+  .tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .tag { font-size: .67rem; letter-spacing: .03em; color: var(--muted);
+         border: 1px solid var(--line); padding: .16rem .48rem; border-radius: 4px; }
+  .live { font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
+          color: var(--accent); border: 1px solid var(--accent-dim); border-radius: 20px;
+          padding: .1rem .5rem; font-weight: 600; }
+
+  /* ---------- writing ---------- */
+  .posts { display: flex; flex-direction: column; }
+  .post { display: grid; grid-template-columns: 1fr auto; gap: .35rem 1.5rem; align-items: baseline;
+          padding: 1.25rem 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit;
+          transition: padding-left .4s cubic-bezier(.22,.68,.24,1); }
+  .post:hover { padding-left: .9rem; }
+  .post h3 { font-size: 1.05rem; font-weight: 560; margin: 0; letter-spacing: -.012em; transition: color .25s; }
+  .post:hover h3 { color: var(--accent); }
+  .post .meta { font-size: .72rem; color: var(--faint); text-align: right; white-space: nowrap; }
+  .post p { grid-column: 1; margin: 0; color: var(--muted); font-size: .89rem; max-width: 40rem; }
+
+  /* ---------- now ---------- */
+  .now-box { border: 1px solid var(--line); border-radius: 14px; padding: 1.75rem;
+             background: var(--surface); max-width: 42rem; }
+  .now-box p { margin: 0; color: var(--muted); }
+  .now-box strong { color: var(--text); font-weight: 600; }
+  .pulse { display:inline-block; width:.5rem; height:.5rem; border-radius:50%;
+           background: var(--accent); margin-right:.5rem; vertical-align: middle;
+           box-shadow: 0 0 0 0 var(--glow); animation: pulse 2.6s ease-out infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 .55rem transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+  footer { border-top: 1px solid var(--line); margin-top: 4rem; padding-block: 2.25rem 4rem;
+           display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+           font-size: .8rem; color: var(--faint); }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  /* scroll reveal - enhancement only, visible by default if JS never runs */
+  .r { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.22,.68,.24,1), transform .7s cubic-bezier(.22,.68,.24,1); }
+  .r.in { opacity: 1; transform: none; }
+  html.no-js .r, .no-js .r { opacity: 1; transform: none; }
+
+  @media (max-width: 640px) { .post { grid-template-columns: 1fr; } .post .meta { text-align: left; } }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: .01ms !important; animation: none !important; }
+    .r { opacity: 1 !important; transform: none !important; }
+  }
+</style>
+</head>
+<body class="no-js">
+
+<header id="hd">
+  <div class="bar">
+    <a class="wordmark" href="/">Ali Alp <span>Özer</span></a>
+    <nav>
+      <a href="#work">Work</a>
+      <a href="#writing">Writing</a>
+      <a href="#">Journey</a>
+      <a href="#">About</a>
+      <button class="toggle" id="t" aria-label="Toggle colour theme">Light</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <main>
+    <div class="hero">
+      <p class="eyebrow">AI Engineer · München</p>
+      <h1>I build AI systems that hold up <span class="hl">in production</span>.</h1>
+      <p class="lede">
+        Retrieval pipelines, autonomous agents, and the evaluation harnesses that prove they
+        actually work. Three years shipping enterprise software on an SAP Innovation
+        Award-winning team, now specialised in applied AI. Starting an MSc at TUM this October.
+      </p>
+      <div class="cta">
+        <a class="btn btn-a" href="#work">See the work</a>
+        <a class="btn btn-b" href="mailto:alialp@live.com">Get in touch</a>
+      </div>
+    </div>
+
+    <section id="work">
+      <div class="sec-head"><h2>Selected work</h2><a href="#">All projects →</a></div>
+      <div class="grid r" id="grid">
+        <a class="card" href="#">
+          <h3>Advocate</h3>
+          <div class="meta">LangGraph · Python · 2026</div>
+          <p>An application agent whose generator never writes facts. It selects claim IDs from
+             a graded evidence store and writes only the connective prose, so every factual
+             sentence traces back to something verified.</p>
+          <div class="tags"><span class="tag">LangGraph</span><span class="tag">Human-in-the-loop</span><span class="tag">Guardrails</span></div>
+        </a>
+        <a class="card" href="#">
+          <h3>Sage</h3>
+          <div class="meta">Python · Qdrant · 2026</div>
+          <p>A RAG pipeline built from scratch over 4,800 chunks, on ports-and-adapters so
+             backends swap by config. A RAGAS harness with a hand-labelled golden set means
+             retrieval changes are measured, not guessed.</p>
+          <div class="tags"><span class="tag">RAG</span><span class="tag">Qdrant</span><span class="tag">RAGAS</span></div>
+        </a>
+        <a class="card" href="#">
+          <h3>Munich Apartment Agent <span class="live">Live</span></h3>
+          <div class="meta">LangGraph · running unattended</div>
+          <p>An autonomous agent firing every three hours: scrape, filter, dedup, enrich,
+             persist, notify. Durable checkpointing for crash-safe resumption, and Telegram
+             reactions that train a learned preference model.</p>
+          <div class="tags"><span class="tag">Supabase</span><span class="tag">systemd</span><span class="tag">Docker</span></div>
+        </a>
+        <a class="card" href="#">
+          <h3>Voice Scheduler</h3>
+          <div class="meta">TypeScript · MCP · 2026</div>
+          <p>A real-time German-language booking agent running voice end to end, from VAD
+             through STT and the LLM to TTS. One adapter interface serves a restaurant and a
+             medical practice, negotiating capabilities per vertical.</p>
+          <div class="tags"><span class="tag">MCP</span><span class="tag">Whisper</span><span class="tag">ElevenLabs</span></div>
+        </a>
+        <a class="card" href="#">
+          <h3>YouTube MCP Server</h3>
+          <div class="meta">Python · open source</div>
+          <p>A published Model Context Protocol server that reflows fragmented captions into
+             prose organised under the video's own chapter structure, so models get authored
+             structure instead of a flat wall of text.</p>
+          <div class="tags"><span class="tag">MCP</span><span class="tag">yt-dlp</span></div>
+        </a>
+        <a class="card" href="#">
+          <h3>Atlas</h3>
+          <div class="meta">Next.js · Vercel AI SDK</div>
+          <p>A streaming multi-provider assistant with a live per-request token and cost meter,
+             tool-calling with structured error recovery, and Sage wired in as a callable tool
+             for cited, retrieval-grounded answers.</p>
+          <div class="tags"><span class="tag">Next.js</span><span class="tag">Tool calling</span></div>
+        </a>
+      </div>
+    </section>
+
+    <section id="writing">
+      <div class="sec-head"><h2>Writing</h2><a href="#">All posts →</a></div>
+      <div class="posts r">
+        <a class="post" href="#">
+          <h3>Your RAG has no baseline</h3><span class="meta">Aug 2026</span>
+          <p>Most retrieval "improvements" are unfalsifiable. What it takes to build a golden
+             set small enough to hand-label and honest enough to trust.</p>
+        </a>
+        <a class="post" href="#">
+          <h3>The eval harness is the product</h3><span class="meta">Jul 2026</span>
+          <p>On shipping an agent to production and discovering the graph was the easy part.</p>
+        </a>
+        <a class="post" href="#">
+          <h3>What ports-and-adapters actually buys you</h3><span class="meta">Jun 2026</span>
+          <p>Swapping a vector store in one config line sounds like architecture astronautics
+             until the day you have to do it.</p>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Now</h2><span class="meta" style="font-size:.72rem;color:var(--faint)">August 2026</span></div>
+      <div class="now-box r">
+        <p><span class="pulse"></span>Building <strong>Advocate's</strong> evidence-grounding
+           layer, the part that makes it structurally unable to invent a fact. Starting the
+           <strong>MSc at TUM</strong> in October. Working through fine-tuning as the final
+           block of a self-directed AI engineering program I have been building in public
+           since June.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>München, Germany</span>
+    <span>
+      <a href="mailto:alialp@live.com">Email</a> ·
+      <a href="https://github.com/AliAlpOezer">GitHub</a> ·
+      <a href="https://linkedin.com/in/alialpozer">LinkedIn</a>
+    </span>
+  </footer>
+</div>
+
+<script>
+  document.body.classList.remove('no-js');
+
+  // theme
+  const t = document.getElementById('t'), r = document.documentElement;
+  t.addEventListener('click', () => {
+    const dark = r.dataset.theme === 'dark';
+    r.dataset.theme = dark ? 'light' : 'dark';
+    t.textContent = dark ? 'Dark' : 'Light';
+  });
+
+  // sticky header hairline
+  const hd = document.getElementById('hd');
+  addEventListener('scroll', () => hd.classList.toggle('stuck', scrollY > 8), { passive: true });
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // pointer spotlight across the card grid - one effect, done once
+  const grid = document.getElementById('grid');
+  if (grid && !reduce && matchMedia('(pointer: fine)').matches) {
+    grid.addEventListener('pointermove', e => {
+      for (const c of grid.children) {
+        const b = c.getBoundingClientRect();
+        c.style.setProperty('--mx', (e.clientX - b.left) + 'px');
+        c.style.setProperty('--my', (e.clientY - b.top) + 'px');
+      }
+    }, { passive: true });
+  }
+
+  // reveals
+  if (reduce) { document.querySelectorAll('.r').forEach(el => el.classList.add('in')); }
+  else {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: .1 });
+    document.querySelectorAll('.r').forEach(el => io.observe(el));
+  }
+</script>
+</body>
+</html>

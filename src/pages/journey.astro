@@ -1,0 +1,176 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import '../styles/prose.css';
+
+const raw = (await getCollection('journey', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.start.getTime() - a.data.start.getTime()
+);
+
+const entries = await Promise.all(
+  raw.map(async (e) => ({ ...e, Content: (await render(e)).Content }))
+);
+
+const KIND: Record<string, string> = {
+  work: 'Work',
+  education: 'Education',
+  milestone: 'Milestone',
+};
+---
+<Base
+  title="Journey"
+  description="How Ali Alp Özer got from a Turkish entrance exam to building AI systems in Munich."
+>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="label">Journey</p>
+      <h1>Three countries, three languages, one long detour into engineering.</h1>
+      <p class="lede">
+        I did not take a direct route, and the indirect one turned out to be the useful part.
+        Here is the actual sequence.
+      </p>
+    </header>
+
+    <div class="layout">
+      {/* Without JavaScript this is a plain anchor list, which is still
+          a perfectly good table of contents. */}
+      <nav class="rail" aria-label="Timeline">
+        <ol>
+          {entries.map((e) => (
+            <li><a href={`#${e.id}`} data-rail={e.id}>{e.data.title}</a></li>
+          ))}
+        </ol>
+      </nav>
+
+      <ol class="timeline">
+        {entries.map((e) => (
+          <li class="entry" id={e.id}>
+            <p class="kind">{KIND[e.data.kind]}</p>
+            <h2>{e.data.title}</h2>
+            <p class="org">
+              {e.data.org}
+              {e.data.location && <span class="loc"> · {e.data.location}</span>}
+            </p>
+            <p class="period">{e.data.period}</p>
+            <div class="prose body"><e.Content /></div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head .label { margin-bottom: var(--space-sm); }
+  h1 {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+    max-width: 22ch;
+  }
+  .lede { max-width: var(--measure); margin-top: var(--space-md); color: var(--ink-muted); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+    gap: var(--space-xl);
+    padding-block: var(--space-lg) var(--space-2xl);
+    align-items: start;
+  }
+
+  /* ---- sticky rail ---- */
+  .rail { position: sticky; top: var(--space-xl); }
+  .rail ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--rule); }
+  .rail li { position: relative; }
+  .rail a {
+    display: block;
+    padding: 0.4rem 0 0.4rem var(--space-sm);
+    font-size: var(--text-sm);
+    color: var(--ink-faint);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .rail a:hover { color: var(--ink-muted); }
+  .rail a[aria-current='true'] { color: var(--ink); }
+  .rail a[aria-current='true']::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    width: 2px;
+    background: var(--accent);
+  }
+
+  /* ---- entries ---- */
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .entry { padding-bottom: var(--space-2xl); scroll-margin-top: var(--space-xl); }
+  .entry + .entry { border-top: 1px solid var(--rule); padding-top: var(--space-xl); }
+
+  .kind {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-2xs);
+  }
+  .entry h2 {
+    font-size: var(--text-xl);
+    letter-spacing: var(--tracking-tight);
+    margin: 0;
+  }
+  .org { margin-top: 0.15rem; color: var(--ink); font-size: var(--text-base); }
+  .loc { color: var(--ink-faint); }
+  .period {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-top: 0.35rem;
+  }
+  .body { margin-top: var(--space-md); }
+
+  @media (max-width: 52rem) {
+    .layout { grid-template-columns: 1fr; gap: var(--space-lg); }
+    .rail { position: static; }
+    .rail ol { display: flex; flex-wrap: wrap; gap: 0 var(--space-sm); border-left: 0;
+               border-bottom: 1px solid var(--rule); padding-bottom: var(--space-2xs); }
+    .rail a { padding: 0.2rem 0; font-size: var(--text-xs); }
+    .rail a[aria-current='true']::before { display: none; }
+  }
+</style>
+
+<script>
+  // Enhancement only: marks the rail entry matching whatever is on screen.
+  // Without this the rail is still a working list of anchor links.
+  const links = new Map<string, HTMLAnchorElement>();
+  document.querySelectorAll<HTMLAnchorElement>('[data-rail]').forEach((a) =>
+    links.set(a.dataset.rail!, a)
+  );
+
+  const entries = document.querySelectorAll<HTMLElement>('.entry');
+  if (entries.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let active: string | null = null;
+
+    const io = new IntersectionObserver(
+      (records) => {
+        // Pick the entry closest to the top of the viewport that is visible.
+        const visible = records
+          .filter((r) => r.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (!visible.length) return;
+
+        const id = visible[0].target.id;
+        if (id === active) return;
+        if (active) links.get(active)?.removeAttribute('aria-current');
+        links.get(id)?.setAttribute('aria-current', 'true');
+        active = id;
+      },
+      { rootMargin: '-10% 0px -60% 0px', threshold: 0 }
+    );
+
+    entries.forEach((e) => io.observe(e));
+  }
+</script>
