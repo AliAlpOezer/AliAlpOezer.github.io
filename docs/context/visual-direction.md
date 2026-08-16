@@ -347,3 +347,68 @@ vet, then a synthesis). Its script is worth keeping as the template for this kin
 "particle mesh is rejected" line in its brief, which would have made all five lenses research
 the wrong question. It had to be stopped and relaunched. When a recorded constraint is
 overruled, fix the context packs *before* spending agents against them.
+
+## Quiet Field: the background, built 2026-08-16
+
+Live in `mockups/c-quiet.html` on the hero (white) and the closing `.band--tile` (near-black).
+Deliberately **not** on the pinned-run band - a field behind the set piece is two effects
+competing, which is still a standing constraint.
+
+**What makes it different from the reference**, and the whole reason it is not just a
+particle plugin: velocity is the curl of a single divergence-free Perlin potential, so
+neighbouring nodes lean the *same* way and the streams rearrange over ~90s. Per-node random
+velocity with wall bounce - the usual implementation, and the reference's - has no coherence
+between neighbours, which is exactly why that version reads as gas rather than as a field.
+Three depth layers then curve around their own off-screen centres with the middle one
+**counter-rotating**, which is what makes the parallax legible without speeding anything up.
+
+**Two structural decisions that are not tuneable later:**
+
+1. **Rotation is applied as a velocity term** (`ω × (p − c)`) with toroidal wrap on a domain
+   overscanned by 100px, never by rotating stored positions. Position-rotation slowly drains
+   the composition out of one corner over several minutes - invisible in a short review,
+   obvious to anyone who leaves the tab open.
+2. **The canvas is section-scoped, not full-bleed.** A canvas spanning the whole page is
+   always intersecting, which makes the `IntersectionObserver` pause dead code.
+
+**Measured, not asserted** (headless Chrome, 1440×681, `?qfdebug` exposes the handle):
+
+| | |
+|---|---|
+| `beginPath` calls per frame | **5**, for 428 links |
+| Frame cost | **1.19 ms** |
+| Max node degree | 5 (cap binding) |
+| Driver while scrolled past | stopped; dark band `visible: false` at scroll 0 |
+| Under `prefers-reduced-motion` | **0 canvases, 0 fields, no rAF** |
+
+The `beginPath` count is the number that matters. Distance-faded link alpha is a continuous
+float, and applying it per segment defeats batching entirely - that is how tsParticles ends
+up emitting ~450 stroke calls a frame in exactly the config that produces this look. Alpha is
+quantised into six buckets instead, so the whole frame is at most six paths. **If that number
+ever climbs, the effect has silently reverted to the expensive version.** Check it before
+believing any later refactor.
+
+**Two fixes the screenshots forced**, both invisible in code review:
+
+- The hero was `<section class="hero wrap">`, so the canvas was clipped to the 1120px text
+  column and the field ended in a vertical edge either side. The wrap moved inside.
+- A section's height is not final when the canvas is built - the webfonts land afterwards and
+  reflow the copy, leaving a stale backing store. Fixed with a `ResizeObserver`;
+  `document.fonts.ready` alone still misses late reflows.
+- On white the section below the hero is *also* white, so an unmasked canvas ended in a hard
+  horizontal cut across the page. The light host gets a `mask-image` dissolve. The dark band
+  needs none, because there the colour flip is already the divider.
+
+**Rejected, do not re-propose** (full reasoning in the workflow result): tsParticles (43.1 KB
+gzip measured, and its config cannot express curl drift or layered rotation); particles.js
+(dead, hardcoded all-pairs); Delaunay/Voronoi as the connection primitive (a triangulation
+connects everything always, so links never breathe - and unfiltered it reads as the 2015
+low-poly hero); three.js/OGL/raw WebGL point rendering (GPU-side motion leaves the CPU with no
+positions, so no neighbour graph and therefore no lines at all); OffscreenCanvas + worker
+(nothing to move at 1.2 ms/frame); alpha WebM (software-decode fallback is the exact burn this
+avoids). Also settled: **no Awwwards/FWA site in this register could be verified - do not let a
+later pass fill that gap with a guessed name.**
+
+Still open: `Depth Cloud` (rank 2) is a genuine 3-D slab rotating on a tilted axis - more
+literally "revolving", but with silhouette pile-up and closer to the sci-fi trope. Worth
+building as a second experiment on the real hero and judging side by side, not instead.
