@@ -215,15 +215,27 @@ Adopted from the reference site, which gets this right, then deepened:
 
 ## Decisions taken
 
-1. ~~**Design direction: A, editorial.**~~ **SUPERSEDED 2026-08-16.** Alp ruled the visual
-   identity a **full reset**: warm paper, Newsreader and Inter are no longer assumed, and
-   the pairing and palette are open again. Three coded prototypes (`mockups/c-quiet.html`,
-   `d-console.html`, `e-broadsheet.html`) replace it, to be judged in a browser rather than
-   argued in the abstract. See `visual-direction.md` for the ruling and the prototype table.
-   The original entry read: light-first warm paper, Newsreader display serif, Inter body,
-   ruled index lists, single deep-blue accent, with a designed dark palette rather than an
-   inversion. Nothing in the built site has been re-styled yet, so `src/styles/tokens.css`
-   still encodes direction A - it is now the *current implementation*, not the *decision*.
+1. **Design direction: C, "Quiet".** Chosen by Alp 2026-08-16 after judging the three
+   coded prototypes in a browser: *"I liked c the most."* Apple lineage - Instrument Sans
+   as a single family at two optical registers, white / parchment `#f5f5f7` / near-black
+   tile `#1d1d1f` as full-bleed section flips where the colour change is the divider, one
+   accent (`#0066cc` light, `#2997ff` on dark), no decorative gradients, one shadow recipe.
+   Logo: the A assembled from four detached links with the apex carrying the accent.
+   Reference implementation is `mockups/c-quiet.html`; `d-console.html` and
+   `e-broadsheet.html` are now rejected alternatives, kept for the record.
+
+   **Not yet promoted.** `src/styles/tokens.css` still encodes the old direction A, so the
+   built site and the chosen identity currently disagree. Promotion is the next structural
+   task, and it is also what has to prove invariant 3 (see `visual-direction.md`).
+
+   Two prior entries superseded: direction A (light-first warm paper, Newsreader + Inter,
+   ruled index lists, deep-blue accent) was binned on 2026-08-16 when Alp ruled the identity
+   a full reset; the three-prototype bake-off that replaced it is now itself resolved.
+
+   **Amendment, same day:** Alp asked for an animated background - *"implement background
+   moving stuff like kerem is having"* - explicitly funded as a multi-agent research pass.
+   This does not reopen the direction; it adds a background layer that must hold C's
+   restraint. Constraints and the shortlist land in `visual-direction.md`.
 2. **Domain: `alpozer.dev`**, confirmed available 2026-08-16 (as were `alpozer.com` and
    `alpozer.de`). Not yet registered.
 
