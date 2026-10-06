@@ -3,96 +3,95 @@ import Base from '../layouts/Base.astro';
 import { SITE } from '../consts';
 import '../styles/prose.css';
 ---
+
 <Base
   title="About"
-  description="Ali Alp Özer: AI engineer in Munich, three languages deep, reskilling from enterprise software into applied AI."
+  description="Alp builds AI systems in Munich. Three years of enterprise software, three languages, and a habit of learning by building."
 >
   <div class="wrap">
     <header class="page-head">
       <p class="label">About</p>
-      <h1>I am an engineer who keeps starting over, on purpose.</h1>
+      <h1>I'm Alp. I learn by building things.</h1>
     </header>
 
     <div class="prose">
       <p>
-        I am Ali Alp Özer. I build AI systems in Munich: retrieval pipelines, autonomous
-        agents, and the evaluation harnesses that decide whether either of those is working.
+        I live in Munich and build AI systems: agents that run on their own, retrieval that
+        answers questions from documents, and the tests that tell me whether either one is any
+        good. Most of what I know, I learned by building something and then finding out where
+        it broke.
       </p>
-
       <p>
-        Before that I spent three years at Flexus AG in Würzburg building enterprise software
-        in SAP CAP, on a product that won an international SAP Innovation Award. I owned the
-        backend architecture, the fleet management cockpit, and eventually the roadmap for
-        it. It was a good job and I learned the thing that most AI content skips entirely:
-        what it takes for software to survive in front of people who did not choose it and
-        cannot work around it.
+        Before AI, I spent three years at Flexus in Würzburg building enterprise software with
+        SAP CAP, on a fleet management product that won an international SAP Innovation Award.
+        I owned the backend architecture and the main screen people worked in, and later its
+        roadmap too. It was a good job. It taught me something most AI demos skip: what it
+        takes for software to hold up in front of people who did not choose it and cannot work
+        around it.
       </p>
 
-      <h2>Why I left a good job to start again</h2>
-
+      <h2>Why I started over</h2>
       <p>
-        Because I could see which half of my skills was going to matter in ten years, and it
-        was not the half I was being paid for.
+        I could see which half of my skills would matter most in ten years, and it was not the
+        half I was being paid for.
       </p>
-
       <p>
-        So in June 2026 I put myself through a sixteen-week program of my own design: LLM
-        applications, retrieval, agents, evaluation, fine-tuning. Not a course with a
-        certificate at the end. A syllabus where every block has to end in a repository that
-        runs. That constraint is why <a href="/work/sage">Sage</a> has a hand-labelled golden
-        set instead of a demo, and why the
-        <a href="/work/munich-apartment-agent">Munich Apartment Agent</a> has durable
-        checkpointing instead of a screenshot.
+        So in June 2026 I set myself a sixteen-week program: LLM applications, retrieval,
+        agents, evaluation, fine-tuning. No course and no certificate at the end, just one rule:
+        every block had to end in a repository that runs. That rule is why
+        <a href="/work/sage">Sage</a> has a test set I labelled by hand instead of a demo video,
+        and why my <a href="/work/munich-apartment-agent">apartment agent</a> can resume after a
+        crash instead of only working in a screenshot.
       </p>
 
-      <h2>What I actually care about</h2>
-
+      <h2>How I work</h2>
       <p>
-        The unglamorous half. Anyone can get a language model to produce something impressive
-        once. The engineering is in the second time, and the thousandth, when the input is
-        malformed and the API is down and the model has quietly started making things up.
+        <strong>Every project keeps its own notes.</strong> Each repository carries a short
+        record of the decisions I made, the alternatives I turned down, and the problems that
+        cost me a day. I write it so that someone, or some model, starting cold can pick up
+        from the conclusions instead of rereading the whole history.
       </p>
-
       <p>
-        That is why almost everything I build has an evaluation harness in it, usually one
-        that took longer than the thing it measures. A system whose output you cannot check
-        is not a system, it is a demo with good lighting.
+        <strong>Ideas get argued with before they get built.</strong> I think in Obsidian. A
+        half-formed idea gets taken apart there before it costs anything. What survives moves
+        into a project's notes; most ideas stay notes, and that is fine.
       </p>
-
+      <p>
+        <strong>I start with the parts I can measure.</strong> Whether an answer "sounds good"
+        is a matter of taste, and taste does not settle arguments. Whether retrieval found the
+        right passage is a number on a test set, and it either went up or it did not. That is
+        why almost everything I build has an evaluation in it, often one that took longer than
+        the thing it measures.
+      </p>
       <blockquote>
-        <p>Success is observed, not claimed. Exit code zero is necessary and not sufficient.</p>
+        <p>A system whose output you cannot check is not finished. It is a demo with good lighting.</p>
       </blockquote>
 
       <h2>Three languages, three countries</h2>
-
       <p>
-        I learned German at school in Turkey, arrived in Germany at B2, and reached C2 within
-        a year. Then I completed an entire Bachelor's degree in it. English I learned properly
-        during the preparation year at ODTÜ, where I had been admitted after placing in the
-        top 0.15% nationally in the Turkish university entrance examination. Turkish is my
-        first language.
+        Turkish is my first language. I learned German at school in Turkey, arrived in Germany
+        at B2, reached C2 within a year, and then did a whole Bachelor's degree in it. English I
+        learned properly in the preparation year at ODTÜ in Ankara, where I got in after placing
+        in the top 0.15% of the Turkish university entrance exam.
+      </p>
+      <p>
+        None of it was a straight line, and I have stopped pretending it should have been.
+        Changing university, country and field each cost time, and each is the reason I can do
+        something today that I could not before. The <a href="/journey">journey page</a> has
+        the full sequence.
       </p>
 
+      <h2>What comes next</h2>
       <p>
-        None of that was a straight line and I have stopped pretending it should have been.
-        Changing university, changing country, changing field: each one cost time and each
-        one is the reason I can do something now that I could not do before. The
-        <a href="/journey">journey page</a> has the actual sequence if you want it.
+        This October I start an MSc in Information Systems (Wirtschaftsinformatik) at the
+        Technical University of Munich, to learn the mathematics under the models and not just
+        the APIs on top of them. Alongside it I keep building
+        <a href="/work/advocate">Advocate</a> and writing down what I learn.
       </p>
-
-      <h2>Where this goes next</h2>
-
       <p>
-        I start an MSc in Wirtschaftsinformatik at the Technical University of Munich this
-        October, to push the formal side of what I have been teaching myself: the mathematics
-        under the models rather than the APIs on top of them. Alongside it I am building
-        <a href="/work/advocate">Advocate</a>, which is the most opinionated thing I have
-        made, and continuing to write down what I learn.
-      </p>
-
-      <p>
-        If you are hiring for AI engineering work, or you have something hard and
-        badly-specified that needs building, <a href={`mailto:${SITE.email}`}>write to me</a>.
+        If you are hiring for AI engineering, or you have a hard, loosely defined problem that
+        needs building, <a href={`mailto:${SITE.email}`}>write to me</a>. You can also
+        <a href="/cv/ali-alp-oezer.pdf" download="Ali-Alp-Oezer-CV.pdf">download my CV</a>.
       </p>
     </div>
   </div>

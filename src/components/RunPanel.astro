@@ -48,7 +48,7 @@ const { system, cadence, store } = Astro.props;
     {PIPELINE.map((s, i) => (
       <li class="step" data-i={i}>
         <div class="step-in" data-i={i}>
-          <p class="eyebrow">Stage {String(i + 1).padStart(2, '0')} &middot; {s.mode}</p>
+          <p class="eyebrow">{s.mode === 'model' ? 'Language model' : 'Plain code'}</p>
           <h3>{s.name}</h3>
           <p>{s.body}</p>
         </div>

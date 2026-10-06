@@ -6,27 +6,46 @@ import IndexRow from '../../components/IndexRow.astro';
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
-const fmt = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+const [latest, ...archive] = posts;
+const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
 <Base
   title="Writing"
-  description="Notes on retrieval, agents, evaluation, and the parts of AI engineering that do not demo well."
+  description="Alp's notes on retrieval, agents and evaluation, written while building them."
 >
   <div class="wrap">
     <header class="page-head">
       <p class="label">Writing</p>
-      <h1>Notes on the parts that do not demo well.</h1>
+      <h1>Notes from building things.</h1>
       <p class="lede">
-        Retrieval, agents, evaluation, and the unglamorous engineering that decides whether
-        any of it survives contact with production.
+        I write when a project teaches me something I wish I had read first. Mostly retrieval,
+        agents and evaluation: the parts that matter more than they look in a demo.
       </p>
     </header>
 
-    {posts.length === 0 ? (
+    {!latest ? (
       <p class="empty">Nothing published yet.</p>
     ) : (
-      <ul class="index">
-        {posts.map((p) => (
+      <>
+        <p class="section-label">Latest</p>
+        <article class="feature">
+          <a class="feature-link" href={`/writing/${latest.id}`}>
+            <p class="meta">
+              <time datetime={latest.data.pubDate.toISOString()}>{fmt(latest.data.pubDate)}</time>
+              <span aria-hidden="true">·</span>
+              {latest.data.tags.join(' / ')}
+            </p>
+            <h2>{latest.data.title}</h2>
+            <p class="description">{latest.data.description}</p>
+            <span class="read">Read it <span aria-hidden="true">↗</span></span>
+          </a>
+        </article>
+
+        {archive.length > 0 && (
+          <>
+            <h2 class="archive-title">More writing</h2>
+            <ul class="index">
+              {archive.map((p) => (
           <IndexRow
             href={`/writing/${p.id}`}
             title={p.data.title}
@@ -34,14 +53,17 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', year: '
             summary={p.data.description}
             tags={p.data.tags}
           />
-        ))}
-      </ul>
+              ))}
+            </ul>
+          </>
+        )}
+      </>
     )}
   </div>
 </Base>
 
 <style>
-  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head { padding-block: var(--space-3xl) var(--space-lg); }
   .page-head .label { margin-bottom: var(--space-sm); }
   h1 {
     font-size: var(--text-2xl);
@@ -50,7 +72,48 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { month: 'short', year: '
     max-width: 20ch;
   }
   .lede { max-width: var(--measure); margin-top: var(--space-md); color: var(--ink-muted); }
+  .section-label {
+    border-top: var(--hairline) solid var(--rule-strong);
+    padding-top: var(--space-sm);
+    color: var(--ink-faint);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+  .feature {
+    margin-bottom: var(--space-3xl);
+    border-bottom: var(--hairline) solid var(--rule);
+  }
+  .feature-link {
+    display: block;
+    padding-block: var(--space-xl);
+    color: inherit;
+    text-decoration: none;
+  }
+  .feature-link:focus-visible { outline: var(--hairline) solid var(--accent); outline-offset: var(--space-3xs); }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+    color: var(--ink-faint);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+  .feature h2 {
+    max-width: 18ch;
+    margin-top: var(--space-md);
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    transition: color var(--t-base) var(--ease-out);
+  }
+  .feature-link:hover h2 { color: var(--accent); }
+  .description { max-width: var(--measure); margin-top: var(--space-sm); color: var(--ink-muted); font-size: var(--text-md); }
+  .read { display: inline-block; margin-top: var(--space-lg); color: var(--accent); font-size: var(--text-sm); }
+  .archive-title { margin-bottom: var(--space-sm); font-size: var(--text-lg); }
   .index { list-style: none; margin: 0 0 var(--space-2xl); padding: 0; }
   .index :global(.item):first-child { border-top: 1px solid var(--rule-strong); }
   .empty { color: var(--ink-muted); padding-block: var(--space-lg) var(--space-2xl); }
+  @media (prefers-reduced-motion: reduce) { .feature h2 { transition: none; } }
 </style>

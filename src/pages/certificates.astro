@@ -1,0 +1,100 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../consts';
+
+const groups = [
+  {
+    title: 'Working with data',
+    note: 'Asking the right question, cleaning the data, and showing the answer.',
+    items: [
+      { title: 'Foundations: Data, Data, Everywhere', issued: 'January 2023' },
+      { title: 'Ask Questions to Make Data-Driven Decisions', issued: 'January 2023' },
+      { title: 'Process Data from Dirty to Clean', issued: 'January 2023' },
+      { title: 'Prepare Data for Exploration', issued: 'March 2023' },
+      { title: 'Analyze Data to Answer Questions', issued: 'March 2023' },
+      { title: 'Share Data Through the Art of Visualization', issued: 'March 2023' },
+    ],
+  },
+  {
+    title: 'Tools',
+    note: 'The spreadsheet, BI and statistics tools most teams already use.',
+    items: [
+      { title: 'Getting started with Microsoft Excel', issued: 'September 2022' },
+      { title: 'Prepare, Clean, Transform, and Load Data using Power BI', issued: 'October 2022' },
+      { title: 'Get Started with Tableau', issued: 'October 2022' },
+      { title: 'Application of Data Analysis in Business with R Programming', issued: 'October 2022' },
+    ],
+  },
+];
+
+const certificationUrl = `${SITE.linkedin}/details/certifications/`;
+---
+
+<Base
+  title="Certificates"
+  description="Data analysis courses Alp completed on Coursera in 2022 and 2023."
+>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="label">Certificates</p>
+      <h1>Where my work with data started.</h1>
+      <p class="lede">
+        Before I moved into AI, I took a series of data analysis courses on Coursera alongside
+        my studies, in 2022 and 2023. They are the groundwork, not the headline. The
+        original certificates are on LinkedIn.
+      </p>
+      <a class="arw source-link" href={certificationUrl} rel="me noopener">
+        See them on LinkedIn
+      </a>
+    </header>
+
+    <div class="groups">
+      {groups.map((group, i) => (
+        <section class="group" aria-labelledby={`group-${i}`}>
+          <h2 id={`group-${i}`}>{group.title}</h2>
+          <p class="note">{group.note}</p>
+          <ul>
+            {group.items.map((item) => (
+              <li>
+                <h3>{item.title}</h3>
+                <p>Coursera, {item.issued}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page-head { padding-block: var(--space-3xl) var(--space-xl); }
+  .page-head .label { margin-bottom: var(--space-sm); }
+  h1 {
+    max-width: 22ch;
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+  }
+  .lede { max-width: var(--measure); margin-top: var(--space-md); color: var(--ink-muted); }
+  .source-link { display: inline-flex; margin-top: var(--space-md); }
+
+  .groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-xl);
+    margin-bottom: var(--space-3xl);
+  }
+  .group {
+    padding-top: var(--space-md);
+    border-top: var(--hairline) solid var(--rule-strong);
+  }
+  .group h2 { font-size: var(--text-lg); letter-spacing: var(--tracking-head); }
+  .group .note { margin-top: var(--space-2xs); color: var(--ink-muted); font-size: var(--text-sm); }
+  .group ul { list-style: none; padding: 0; margin-top: var(--space-md); display: grid; gap: var(--space-md); }
+  .group h3 { font-size: var(--text-base); font-weight: 600; letter-spacing: var(--tracking-tight); }
+  .group li p { margin-top: var(--space-3xs); color: var(--ink-faint); font-size: var(--text-sm); }
+  @media (max-width: 48rem) {
+    .groups { grid-template-columns: 1fr; }
+  }
+</style>

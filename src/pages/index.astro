@@ -6,20 +6,17 @@ import RunPanel from '../components/RunPanel.astro';
 import StackField from '../components/StackField.astro';
 import CopyButton from '../components/CopyButton.astro';
 import { SITE } from '../consts';
-import { METHOD, FIGURES } from '../data/home';
+import { LESSONS, FIGURES } from '../data/home';
 
 const projects = (await getCollection('projects', ({ data }) => !data.draft))
   .sort((a, b) => a.data.order - b.data.order);
 
 const featured = projects.filter((p) => p.data.featured);
-const grid = featured.length >= 6 ? featured : projects.slice(0, 6);
+const grid = featured.length >= 5 ? featured.slice(0, 5) : projects.slice(0, 5);
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 const latest = posts[0];
-
-const journey = (await getCollection('journey', ({ data }) => !data.draft))
-  .sort((a, b) => a.data.start.getTime() - b.data.start.getTime());
 
 /* The stack display aggregates every shipped project's stack, then the
    explored tier is added inside the component. Built here because only the
@@ -35,50 +32,79 @@ const shipped = [...byTech.entries()]
   .map(([name, projects]) => ({ name, projects }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-const railLabel = (d: Date, end?: Date) =>
-  !end && d.getFullYear() >= new Date().getFullYear()
-    ? `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`
-    : String(d.getFullYear());
+const STATUS: Record<string, string> = {
+  live: 'Running',
+  shipped: 'Shipped',
+  building: 'In progress',
+  archived: 'Archived',
+};
 
 const fmtDate = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
 
-<Base title={`${SITE.name} · ${SITE.role}`} bareTitle>
+<Base title={`${SITE.name}, AI engineer in ${SITE.locality}`} bareTitle>
   <QuietField />
 
   <section class="hero" data-field>
-    <div class="wrap">
-      <p class="eyebrow intro">{SITE.role} <span aria-hidden="true">&middot;</span> {SITE.location}</p>
-      <h1 class="intro">Agents that can prove they worked.</h1>
-      <p class="lede intro">
-        Retrieval pipelines, autonomous agents, and the evaluation harnesses that show what
-        they actually do. Built by hand, so every part of them is mine to measure.
-      </p>
-      <p class="hero-meta intro">
-        <span>Currently building Sage &amp; Advocate</span>
-        <span>Previously Flexus, 2023&ndash;2026</span>
-        <span>MSc Wirtschaftsinformatik, TUM, from October</span>
-      </p>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1 class="intro">Hi, I'm Alp.</h1>
+        <p class="hero-statement intro">
+          <span class="visually-hidden">I build agents that work while I sleep, retrieval I can actually measure, voice agents that answer in a second, and tools that AI assistants can use.</span>
+          <span aria-hidden="true">
+            <span class="hero-statement-prefix">I build</span>
+            <span class="hero-phrases" data-hero-phrases>
+              <span class="hero-phrase" data-active="true">agents that work while I sleep.</span>
+              <span class="hero-phrase">retrieval I can actually measure.</span>
+              <span class="hero-phrase">voice agents that answer in a second.</span>
+              <span class="hero-phrase">tools that AI assistants can use.</span>
+            </span>
+          </span>
+        </p>
+        <p class="hero-description intro">Three years of enterprise software taught me what it takes for software to hold up in front of real users. Now I build AI systems, mostly to understand how they really work, and I write down what each one teaches me.</p>
+        <div class="hero-actions intro">
+          <a class="hero-button hero-button--primary" href="#work">See what I built</a>
+          <a class="hero-button" href="/cv/ali-alp-oezer.pdf" download="Ali-Alp-Oezer-CV.pdf">Download CV</a>
+        </div>
+      </div>
+      <a class="hero-visual intro" href="/work/streamline" aria-label="Read about Streamline, a water reuse planner built at a hackathon">
+        <img src="/project-media/streamline/focus.png" alt="Streamline's design canvas focusing on a proposed water reuse path between a bottle washer and cooling tower." fetchpriority="high" />
+        <span class="hero-visual-caption"><span><strong>Streamline</strong><span class="hero-visual-sub">Planning water reuse in a factory</span></span><span class="hero-visual-go">Read more <span aria-hidden="true">↗</span></span></span>
+      </a>
     </div>
   </section>
+
+  <div class="intro-note">
+    <div class="wrap">
+      <p>This summer I set myself a sixteen-week AI engineering program with one rule: every block had to end in something that runs. Most of the projects below came out of it. In October I start a master's at TUM.</p>
+      <a class="arw" href="/about">More about me</a>
+    </div>
+  </div>
 
   <section class="band" id="work">
     <div class="wrap">
       <div class="band-head reveal">
-        <h2>Selected work</h2>
+        <h2>Things I built</h2>
         <a class="arw" href="/work">All projects</a>
       </div>
       <div class="grid reveal" id="work-grid">
         {grid.map((p) => (
           <article class="card" data-stack={p.data.stack.join('|')}>
+            {p.data.media[0] && (
+              <a class="card-media" href={`/work/${p.id}`} aria-label={`View ${p.data.title}`}>
+                <img src={p.data.media[0].src} alt={p.data.media[0].alt} loading="lazy" />
+              </a>
+            )}
             <div class="card-top">
-              <h3>
-                <a href={`/work/${p.id}`}>{p.data.title}</a>
-              </h3>
-              <span class="status" data-s={p.data.status}>{p.data.status}</span>
+              <span class="card-name">{p.data.title}</span>
+              <span class="status" data-s={p.data.status}>{STATUS[p.data.status]}</span>
             </div>
-            <p>{p.data.tagline ?? p.data.summary}</p>
+            <h3>
+              <a href={`/work/${p.id}`}>{p.data.headline}</a>
+            </h3>
+            <p>{p.data.summary}</p>
+            {p.data.recognition && <p class="recognition">{p.data.recognition}</p>}
             <p class="tags">
               {p.data.stack.map((t) => <span class="tag" data-tag={t}>{t}</span>)}
             </p>
@@ -92,14 +118,16 @@ const fmtDate = (d: Date) =>
     <div class="wrap">
       <div class="band-head">
         <div>
-          <p class="eyebrow">Anatomy of a run</p>
-          <h2>Six stages. The model owns one.</h2>
+          <p class="eyebrow">A closer look</p>
+          <h2>Six steps. The model does one of them.</h2>
+          <p class="band-lede">Good flats in Munich are gone within hours, so I built an agent that checks for me every three hours and messages me when something fits. Only one of its six steps uses a language model. That split is what I would carry into any agent: plain code for the decisions that have to be right, the model for the part that is genuinely fuzzy.</p>
+          <a class="arw band-link" href="/work/munich-apartment-agent">The full story</a>
         </div>
       </div>
       <RunPanel
-        system="munich-apartment-agent"
-        cadence="cycle every 3h · systemd timer"
-        store="SQLite"
+        system="Munich apartment agent"
+        cadence="runs every 3 hours"
+        store="saves to SQLite"
       />
     </div>
   </section>
@@ -114,51 +142,21 @@ const fmtDate = (d: Date) =>
     <div class="wrap">
       <div class="band-head reveal">
         <div>
-          <p class="eyebrow">How I work</p>
-          <h2>Method, not inventory.</h2>
+          <p class="eyebrow">Lessons that carry over</p>
+          <h2>What building these taught me.</h2>
         </div>
       </div>
       {/* Exactly four entries, so the grid is 2x2 rather than auto-fit. An
           auto-fit grid left empty cells at wide widths and the 1px hairline
           background showed through them as a grey block. */}
       <div class="method reveal">
-        {METHOD.map((m, i) => (
+        {LESSONS.map((m) => (
           <div class="mth">
-            <span class="n">{String(i + 1).padStart(2, '0')}</span>
             <h3>{m.title}</h3>
             <p>{m.body}</p>
+            <a class="arw from" href={m.from.href}>Learned on {m.from.name}</a>
           </div>
         ))}
-      </div>
-    </div>
-  </section>
-
-  <section class="band band--sunk" id="journey">
-    <div class="wrap">
-      <div class="band-head reveal">
-        <div>
-          <p class="eyebrow">Journey</p>
-          <h2>Ankara to München, the long way.</h2>
-        </div>
-        <a class="arw" href="/journey">Full timeline</a>
-      </div>
-      <div class="jr">
-        <nav class="jr-rail" aria-label="Timeline">
-          {journey.map((j, i) => (
-            <a href={`#jr-${i}`} data-i={i} data-on={i === 0 ? 'true' : undefined}>
-              {railLabel(j.data.start, j.data.end)}
-            </a>
-          ))}
-        </nav>
-        <ol class="jr-list">
-          {journey.map((j, i) => (
-            <li class="jr-item" id={`jr-${i}`} data-i={i}>
-              <span class="jr-when">{j.data.period}</span>
-              <h3>{j.data.title}</h3>
-              <p class="jr-org">{j.data.org}</p>
-            </li>
-          ))}
-        </ol>
       </div>
     </div>
   </section>
@@ -194,7 +192,7 @@ const fmtDate = (d: Date) =>
         ))}
       </div>
       <div class="hail reveal">
-        <h2>If you are hiring for this, I would like to hear from you.</h2>
+        <h2>If you are hiring someone who builds like this, I would like to hear from you.</h2>
         <div class="links">
           <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
           <CopyButton value={SITE.email} />
@@ -207,6 +205,34 @@ const fmtDate = (d: Date) =>
 </Base>
 
 <script>
+  const heroPhrases = [...document.querySelectorAll<HTMLElement>('.hero-phrase')];
+  if (heroPhrases.length > 1) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let activeIndex = 0;
+    let rotation: number | undefined;
+
+    const showPhrase = (index: number) => {
+      heroPhrases[activeIndex].removeAttribute('data-active');
+      activeIndex = index;
+      heroPhrases[activeIndex].setAttribute('data-active', 'true');
+    };
+
+    const startRotation = () => {
+      window.clearInterval(rotation);
+      if (reducedMotion.matches || document.hidden) return;
+      rotation = window.setInterval(() => {
+        showPhrase((activeIndex + 1) % heroPhrases.length);
+      }, 5000);
+    };
+
+    reducedMotion.addEventListener('change', () => {
+      if (reducedMotion.matches) showPhrase(0);
+      startRotation();
+    });
+    document.addEventListener('visibilitychange', startRotation);
+    startRotation();
+  }
+
   /* Pointer spotlight on the work grid and the method cards. The one effect
      carried over from the atmospheric mockup, at lower intensity and
      achromatic enough to read as light rather than as glow. */
@@ -220,34 +246,50 @@ const fmtDate = (d: Date) =>
     }, { passive: true });
   }
 
-  /* Journey rail. The items tile the list contiguously, so exactly one always
-     crosses the centre band - no gap handling needed here, unlike the run. */
-  const rail = [...document.querySelectorAll<HTMLElement>('.jr-rail a')];
-  const items = document.querySelectorAll<HTMLElement>('.jr-item');
-  if (rail.length && items.length) {
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        const i = Number((e.target as HTMLElement).dataset.i);
-        rail.forEach((a, j) => { a.dataset.on = String(j === i); });
-      }
-    }, { rootMargin: '-45% 0px -45% 0px' });
-    items.forEach((el) => io.observe(el));
-  }
 </script>
 
 <style>
-  .hero { padding-block: clamp(4.5rem, 14vh, 9rem) var(--section); }
-  .hero h1 { max-width: 15ch; }
-  .hero .lede { margin-top: var(--space-lg); }
-  .hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-md);
-    margin-top: var(--space-2xl);
-    font-size: var(--text-sm);
-    color: var(--ink-faint);
+  .hero { min-height: min(42rem, 78vh); display: grid; align-items: center; padding-block: var(--space-2xl); }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: var(--space-xl); align-items: center; }
+  .hero-copy { position: relative; z-index: 1; }
+  .hero h1 { font-size: clamp(3.1rem, 5.7vw, 5.8rem); line-height: var(--leading-tight); }
+  .hero-statement { margin-top: var(--space-sm); color: var(--accent); font-size: var(--text-xl); font-weight: 600; letter-spacing: var(--tracking-tight); }
+  .hero-statement-prefix { display: block; }
+  .hero-phrases { display: grid; }
+  .hero-phrase { grid-area: 1 / 1; visibility: hidden; opacity: 0; transform: translateY(0.25em); transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--ease-out), visibility 0s var(--t-slow); }
+  .hero-phrase[data-active='true'] { visibility: visible; opacity: 1; transform: none; transition-delay: 0s; }
+  .hero-description { max-width: var(--measure); margin-top: var(--space-md); color: var(--ink-muted); font-size: var(--text-md); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-lg); }
+  .hero-button { display: inline-flex; justify-content: center; align-items: center; min-height: 2.75rem; padding: var(--space-2xs) var(--space-md); border: var(--hairline) solid var(--rule-strong); border-radius: 999px; color: var(--ink); background: var(--paper); font-size: var(--text-sm); font-weight: 600; text-decoration: none; white-space: nowrap; transition: transform var(--t-fast) var(--ease-out), background-color var(--t-base) var(--ease-out); }
+  .hero-button:hover { transform: translateY(-2px); }
+  .hero-button:active { transform: translateY(0); }
+  .hero-button--primary { background: var(--ink); color: var(--paper); }
+  .hero-visual { display: block; position: relative; z-index: 1; overflow: hidden; border: var(--hairline) solid var(--rule); border-radius: var(--radius-lg); background: var(--paper); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-product); transition: transform var(--t-slow) var(--ease-out); }
+  .hero-visual:hover { transform: translateY(-4px); }
+  .hero-visual img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: left top; }
+  .hero-visual-caption { display: flex; justify-content: space-between; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); font-size: var(--text-sm); }
+  .hero-visual-caption strong { display: block; font-size: var(--text-md); }
+  .hero-visual-sub { display: block; color: var(--ink-muted); }
+  .hero-visual-go { color: var(--accent); white-space: nowrap; }
+  .intro-note { padding-block: var(--space-xl); border-block: var(--hairline) solid var(--rule); }
+  .intro-note .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-xl); align-items: end; }
+  .intro-note p { max-width: 55rem; font-size: var(--text-lg); line-height: var(--leading-body); letter-spacing: var(--tracking-head); }
+  .intro-note a { white-space: nowrap; font-size: var(--text-sm); }
+  @media (max-width: 48rem) {
+    .hero { min-height: 0; }
+    .hero-grid, .intro-note .wrap { grid-template-columns: 1fr; }
+    .hero h1 { font-size: clamp(2.8rem, 12vw, 4.5rem); }
+    .hero-visual { max-width: 36rem; }
+    .hero-visual img { aspect-ratio: 16 / 10; }
+    .intro-note .wrap { gap: var(--space-sm); }
   }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-button, .hero-visual, .hero-phrase { transition: none; }
+  }
+
+  /* ---------- run band intro ---------- */
+  .band-lede { max-width: var(--measure-wide); margin-top: var(--space-sm); color: var(--on-tile-mute); font-size: var(--text-md); line-height: var(--leading-body); }
+  .band-link { display: inline-block; margin-top: var(--space-sm); color: var(--accent-lift); font-size: var(--text-sm); }
 
   /* ---------- work grid + pointer spotlight ---------- */
   .grid {
@@ -257,7 +299,7 @@ const fmtDate = (d: Date) =>
     border: 1px solid var(--rule);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     isolation: isolate;
   }
   .card {
@@ -269,6 +311,13 @@ const fmtDate = (d: Date) =>
     min-height: 15rem;
     transition: opacity var(--t-slow) var(--ease-out);
   }
+  .card-media { display: block; margin: calc(-1 * var(--space-lg)) -1.75rem var(--space-lg); overflow: hidden; aspect-ratio: 16 / 9; background: var(--paper-sunk); }
+  .card-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform var(--t-slow) var(--ease-out); }
+  .card:hover .card-media img { transform: scale(1.025); }
+  .card:first-child { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr; column-gap: var(--space-lg); min-height: 20rem; }
+  .card:first-child .card-media { grid-column: 1; grid-row: 1 / -1; height: calc(100% + 2 * var(--space-lg)); margin: calc(-1 * var(--space-lg)) 0 calc(-1 * var(--space-lg)) -1.75rem; aspect-ratio: auto; }
+  .card:first-child .card-top, .card:first-child h3, .card:first-child > p { grid-column: 2; }
+  .card:first-child .tags { grid-row: 5; }
   .card::before {
     content: '';
     position: absolute;
@@ -290,7 +339,8 @@ const fmtDate = (d: Date) =>
     justify-content: space-between;
     gap: var(--space-sm);
   }
-  .card h3 { font-size: var(--text-lg); }
+  .card-name { font-size: var(--text-sm); font-weight: 600; color: var(--ink-faint); }
+  .card h3 { margin-top: var(--space-2xs); font-size: var(--text-lg); line-height: var(--leading-snug); }
   /* No lift on hover: the grid is one hairline-separated surface and raising a
      cell tears the seam it shares with its neighbours. The affordance is
      carried by the title instead. The arrow is positioned out of flow -
@@ -303,9 +353,7 @@ const fmtDate = (d: Date) =>
   }
   .card h3 a::after {
     content: '\2192';
-    position: absolute;
-    left: 100%;
-    top: 0;
+    display: inline-block;
     margin-left: 0.3125rem;
     font-size: 0.875em;
     opacity: 0;
@@ -325,6 +373,7 @@ const fmtDate = (d: Date) =>
   }
   .status[data-s='live'] { color: var(--positive); }
   .card > p { margin-top: var(--space-xs); color: var(--ink-muted); font-size: var(--text-sm); }
+  .card > .recognition { margin-top: var(--space-sm); color: var(--accent); font-weight: 600; }
   .tags {
     margin-top: auto;
     padding-top: var(--space-md);
@@ -341,6 +390,14 @@ const fmtDate = (d: Date) =>
     transition: border-color var(--t-base) var(--ease-out), color var(--t-base) var(--ease-out);
   }
   .tag[data-hit='true'] { border-color: var(--accent); color: var(--accent); }
+  @media (max-width: 48rem) {
+    .grid { grid-template-columns: 1fr; }
+    .card:first-child { display: flex; min-height: 0; }
+    .card:first-child .card-media { width: calc(100% + 3.5rem); height: auto; margin: calc(-1 * var(--space-lg)) -1.75rem var(--space-lg); aspect-ratio: 16 / 9; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card-media img { transition: none; }
+  }
 
   /* ---------- method ---------- */
   .method {
@@ -366,45 +423,10 @@ const fmtDate = (d: Date) =>
   }
   .method:hover .mth::before { opacity: 1; }
   .mth > * { position: relative; z-index: 1; }
-  .mth .n {
-    display: block;
-    font-size: var(--text-xs);
-    color: var(--ink-faint);
-    font-variant-numeric: tabular-nums;
-    margin-bottom: var(--space-sm);
-  }
+  .mth { display: flex; flex-direction: column; }
   .mth h3 { font-size: var(--text-lg); }
+  .mth .from { margin-top: auto; padding-top: var(--space-md); font-size: var(--text-sm); }
   .mth p { margin-top: var(--space-xs); color: var(--ink-muted); font-size: var(--text-sm); }
-
-  /* ---------- journey rail ---------- */
-  .jr { display: grid; gap: var(--space-2xl); }
-  @media (min-width: 58rem) { .jr { grid-template-columns: 13rem minmax(0, 1fr); gap: var(--space-3xl); } }
-  .jr-rail {
-    position: sticky;
-    top: 5rem;
-    align-self: start;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-  .jr-rail a {
-    display: block;
-    padding: 0.375rem 0 0.375rem var(--space-2xs);
-    font-size: var(--text-sm);
-    color: var(--ink-faint);
-    text-decoration: none;
-    border-left: 2px solid var(--rule);
-    font-variant-numeric: tabular-nums;
-    transition: color var(--t-slow) var(--ease-out), border-color var(--t-slow) var(--ease-out);
-  }
-  .jr-rail a[data-on='true'] { color: var(--ink); border-left-color: var(--accent); }
-  .jr-list { list-style: none; margin: 0; padding: 0; }
-  .jr-item { padding-block: 2.25rem; border-top: 1px solid var(--rule); }
-  .jr-item:first-child { border-top: 0; padding-top: 0; }
-  .jr-when { font-size: var(--text-sm); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
-  .jr-item h3 { margin-top: var(--space-2xs); font-size: var(--text-lg); }
-  /* Needs the extra class: a bare `.jr-org` loses to `.jr-item p`. */
-  .jr-item .jr-org { margin-top: var(--space-3xs); font-size: var(--text-sm); color: var(--accent); }
 
   /* ---------- writing ---------- */
   .post {

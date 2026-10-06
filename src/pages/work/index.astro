@@ -1,46 +1,60 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import IndexRow from '../../components/IndexRow.astro';
 
 const projects = (await getCollection('projects', ({ data }) => !data.draft))
   .sort((a, b) => a.data.order - b.data.order);
 
-const statusBadge = (s: string) =>
-  s === 'live' ? 'Live' : s === 'building' ? 'In progress' : undefined;
+const statusText: Record<string, string> = {
+  live: 'Running',
+  shipped: 'Shipped',
+  building: 'In progress',
+  archived: 'Archived',
+};
 ---
 <Base
   title="Work"
-  description="AI systems, retrieval pipelines and autonomous agents built by Ali Alp Özer."
+  description="Agents, retrieval systems and AI tools I built, and what each one taught me."
 >
   <div class="wrap">
     <header class="page-head">
       <p class="label">Work</p>
-      <h1>Things I have built, and what they taught me.</h1>
+      <h1>Things I built, and what they taught me.</h1>
       <p class="lede">
-        Each of these has a write-up rather than a link straight to a repository. The
-        interesting part of a project is rarely the code; it is the constraint that decided
-        the shape of it, and what happened when that constraint met reality.
+        Most of these started as a question I could only answer by building something. Each
+        page explains what the project does, then what I learned that I would use again.
       </p>
     </header>
 
-    <ul class="index">
+
+    <ul class="projects">
       {projects.map((p) => (
-        <IndexRow
-          href={`/work/${p.id}`}
-          title={p.data.title}
-          meta={`${p.data.stack[0]} · ${p.data.period}`}
-          badge={statusBadge(p.data.status)}
-          summary={p.data.summary}
-          tags={p.data.stack}
-        />
+        <li class="project">
+          <article>
+            {p.data.media[0] && (
+              <div class="project-media">
+                <img src={p.data.media[0].src} alt={p.data.media[0].alt} loading="lazy" />
+              </div>
+            )}
+            <div class="project-head">
+              <p class="project-meta">{p.data.title} <span aria-hidden="true">·</span> {p.data.period}, {statusText[p.data.status].toLowerCase()}</p>
+              <span class="mark" aria-hidden="true">↗</span>
+            </div>
+            <h2><a href={`/work/${p.id}`}>{p.data.headline}</a></h2>
+            <p class="summary">{p.data.summary}</p>
+            {p.data.recognition && <p class="recognition">{p.data.recognition}</p>}
+            <ul class="tags" aria-label={`Technologies used in ${p.data.title}`}>
+              {p.data.stack.map((tech) => <li>{tech}</li>)}
+            </ul>
+          </article>
+        </li>
       ))}
     </ul>
   </div>
 </Base>
 
 <style>
-  .page-head { padding-block: var(--space-2xl) var(--space-lg); }
+  .page-head { padding-block: var(--space-3xl) var(--space-lg); }
   .page-head .label { margin-bottom: var(--space-sm); }
   h1 {
     font-size: var(--text-2xl);
@@ -53,6 +67,66 @@ const statusBadge = (s: string) =>
     margin-top: var(--space-md);
     color: var(--ink-muted);
   }
-  .index { list-style: none; margin: 0 0 var(--space-2xl); padding: 0; }
-  .index :global(.item):first-child { border-top: 1px solid var(--rule-strong); }
+  .projects {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--hairline);
+    margin: 0 0 var(--space-3xl);
+    padding: var(--hairline);
+    list-style: none;
+    background: var(--rule);
+    border: var(--hairline) solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .project { min-width: 0; background: var(--paper); }
+  .project article {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: var(--space-lg);
+    transition: background-color var(--t-base) var(--ease-out);
+  }
+  .project-media { aspect-ratio: 16 / 9; margin: calc(-1 * var(--space-lg)) calc(-1 * var(--space-lg)) var(--space-lg); overflow: hidden; background: var(--paper-sunk); border-bottom: var(--hairline) solid var(--rule); }
+  .project-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform var(--t-slow) var(--ease-out); }
+  .project:hover .project-media img { transform: scale(1.025); }
+  .project:first-child { grid-column: 1 / -1; }
+  .project:first-child article { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; column-gap: var(--space-lg); min-height: 21rem; }
+  .project:first-child .project-media { grid-column: 1; grid-row: 1 / 5; height: calc(100% + 2 * var(--space-lg)); margin: calc(-1 * var(--space-lg)) 0 calc(-1 * var(--space-lg)) calc(-1 * var(--space-lg)); aspect-ratio: auto; border-bottom: 0; border-right: var(--hairline) solid var(--rule); }
+  .project:first-child .project-head, .project:first-child h2, .project:first-child .summary, .project:first-child .tags { grid-column: 2; }
+  .project:hover article { background: var(--paper-sunk); }
+  .project-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-xs); }
+  .project-meta {
+    color: var(--ink-faint);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+  .mark { color: var(--accent); opacity: 0; transition: opacity var(--t-base) var(--ease-out); }
+  .project:hover .mark, .project:focus-within .mark { opacity: 1; }
+  h2 { margin-top: var(--space-md); font-size: var(--text-xl); letter-spacing: var(--tracking-head); }
+  h2 a { color: inherit; text-decoration: none; }
+  h2 a::after { content: ''; position: absolute; inset: 0; }
+  h2 a:hover, h2 a:focus-visible { color: var(--accent); }
+  .summary { margin-top: var(--space-xs); color: var(--ink-muted); font-size: var(--text-sm); }
+  .recognition { margin-top: var(--space-sm); color: var(--accent); font-size: var(--text-sm); font-weight: 600; }
+  .tags { display: flex; flex-wrap: wrap; gap: var(--space-3xs); margin: auto 0 0; padding: var(--space-md) 0 0; list-style: none; }
+  .tags li {
+    padding: var(--space-3xs) var(--space-2xs);
+    border: var(--hairline) solid var(--rule);
+    border-radius: 9999px;
+    color: var(--ink-muted);
+    font-size: var(--text-2xs);
+  }
+  @media (max-width: 48rem) {
+    .projects { grid-template-columns: 1fr; }
+    .project article { padding: var(--space-md); }
+    .project-media { margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-md)) var(--space-md); }
+    .project:first-child article { display: flex; min-height: 0; }
+    .project:first-child .project-media { width: calc(100% + 2 * var(--space-md)); height: auto; aspect-ratio: 16 / 9; margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-md)) var(--space-md); border-right: 0; border-bottom: var(--hairline) solid var(--rule); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .project article, .mark, .project-media img { transition: none; }
+  }
 </style>

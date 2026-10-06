@@ -3,6 +3,49 @@
 Written 2026-08-16. Direction chosen, scaffold built and committed (`d10f8fc`).
 Companion file: `reference-site-analysis.md`.
 
+## First deployment - 2026-10-06
+
+Alp asked to ship the current state and keep improving it live. The site deploys to GitHub Pages as the user site `AliAlpOezer/AliAlpOezer.github.io`, served at `https://alialpoezer.github.io/` by `.github/workflows/deploy.yml` on every push to `main`. That workflow runs `npm run build`, so the CV file check gates each deploy. A user site serves from the root, so no Astro `base` is needed and absolute links keep working. `SITE.url`, `astro.config.mjs`, the public CV and `og-default.png` all name this origin, because `alpozer.dev` is still unregistered and a link to it would be dead. Rejected: a project site under `/website/`, because every root-relative link would need a base prefix. Superseded: the earlier Cloudflare Pages plan, which needed the domain first. Cost accepted: the repository has to be public on the free plan, so `docs/` and `mockups/` are public too, which invariant 1 already allows. When the domain is registered, add `public/CNAME` and change those four places.
+
+## Homepage brief correction - 2026-10-06
+
+Alp clarified that a visitor arrives to learn who he is as well as what he builds. The one-line anonymous hero was too sparse. Keep a concise name, agentic-systems focus, relevant enterprise background, real product UI, and a public CV download in the first part of the homepage. The full biography still belongs on `/about`. The chosen Quiet identity and static Astro content remain; the Kerem reference informs image-led hierarchy, not a wholesale color or code copy. Rejected: a biography dump in the hero, because the work must remain visible in the first viewport. Cost accepted: the hero has to balance a personal introduction with a product image at both desktop and mobile widths.
+
+## Public CV boundary - 2026-10-06
+
+Goal: a visitor can download a concise, accurate CV without receiving private application data or stale claims. This is a public portfolio artifact, not an export of an employer-specific application.
+
+Invariants: (1) The public CV contains only the contact fields already permitted on this site, enforced by reviewing the editable source and extracted PDF text. (2) Its project statements must agree with the current case studies, enforced by a manual content comparison before regeneration. (3) The download always resolves to a real, readable PDF, enforced by a build-time file check and a post-build PDF extraction/render check.
+
+| Component | Owns | Autonomy | Failure |
+|---|---|---|---|
+| Private Advocate Data | Historical evidence and tailored applications | Human-triggered | Unavailable: the public site still builds |
+| Public CV source | Deliberately selected, employer-neutral claims and contact fields | Human-triggered | Missing or stale: do not regenerate the PDF |
+| PDF renderer | Deterministic source-to-PDF conversion | Human-triggered | Nonzero exit or bad output: keep the prior artifact and do not update the link |
+| Website | Download link to the reviewed local PDF | Autonomous static build | Missing PDF: build verification fails |
+
+Seams: the private source is consulted manually, never imported by the website build; the public source is a versioned HTML file; the renderer writes a versioned local PDF; the homepage links only to that PDF. Dependency points from public content to reviewed facts, never from the static build into the private repository. Repeated rendering replaces only the named generated PDF after review; a malformed input or renderer failure cannot silently publish a different application PDF.
+
+Decision: create a public, employer-neutral CV using current portfolio facts. Rejected: copying the most recent tailored PDF, because it includes a private phone number and employer-specific framing. Rejected: copying `master_resume_en.md` as-is, because its project stack and deployment details conflict with current case studies. Cost accepted: the public CV must be manually updated when portfolio facts change. The site remains local until the owner chooses to publish it.
+
+## Project evidence and media - 2026-10-06
+
+Goal: a visitor can see the value of shipped work before deciding whether to read its implementation.
+
+Invariants: (1) Screenshots are captured from real project UI, never fabricated; the content editor verifies the source before copying an asset. (2) A private project's source URL never crosses into the public site; `repo` remains optional and `sourceReviewed: true` is required before the case-study template exposes it. (3) Each image has descriptive alt text and remains accessible without JavaScript; the content schema and static templates enforce this.
+
+| Component | Owns | Failure behavior |
+|---|---|---|
+| Project content | Narrative, status, optional media captions and optional public links | Missing media leaves a text-first card; missing link leaves no source CTA |
+| Local media assets | Versioned, self-hosted screenshots | Missing asset is caught by build/HTTP verification before publication |
+| Astro views | The same media contract on home, index and case study | Static text and links still render without JavaScript |
+
+The seam is project frontmatter `media: [{ src, alt, caption }]` into Astro's content schema and then into static HTML. The first image is the card cover; the full ordered set appears in the case study. Content owns ordering and alt text; templates own layout. A malformed entry fails schema validation rather than being silently omitted. Media assets live under `public/project-media/` so GitHub Pages can serve them directly. Pages only depend on parsed content, never on sibling repositories or private evidence files.
+
+Decision: show Streamline through its actual demo UI, with no repository link. The user identifies it as the Munich EIT Water Hackathon team's second-place project, alongside an individual third-place student award. The organizer page establishes separate team and student award tracks but does not itself name winners, so this placement remains attributed to the user's firsthand report until a public result or certificate is available. Existing `repo` entries remain in content but are hidden until each source passes a visibility, documentation, structure, and secret-safety review. Rejected: linking the private repo, because screenshots communicate the product without exposing code. Rejected: generating UI mockups, because they would imply product states that may not exist. Cost accepted: each image needs a manual privacy and legibility review before publication.
+
+Carried question: which other projects have representative, safe screenshots? Add them incrementally after reviewing each real interface, rather than inventing covers to fill the grid.
+
 ## Where this stands
 
 Astro scaffold is complete and builds clean: 14 routes, six projects with case-study
@@ -16,8 +59,9 @@ pages, one post, five journey entries, `/about`, `/now`, RSS, sitemap, 404.
 3. **Blog posts.** One sample written (`your-rag-has-no-baseline`) to establish register.
    Topics should carry Alp's own opinions, not inferred ones. Scope widened 2026-08-16 to
    include explainers about the AI field, not only his own work.
-4. **Deploy.** Register `alpozer.dev`, Cloudflare Pages, CI gate on broken links and
-   accessibility regressions.
+4. **Deploy.** Live on GitHub Pages since 2026-10-06 (see "First deployment"). Still
+   open: register `alpozer.dev`, and add a CI gate on broken links and accessibility
+   regressions.
 
 ## Repo-reading pass - done 2026-08-16
 
@@ -308,3 +352,21 @@ cards by `data-stack` rather than importing them, so the two stay decoupled.
   deleting them once a direction was promoted; they are kept for now because the
   side-by-side is still useful. Delete when that stops being true.
 - Claim coverage still reports unresolved IDs - see open question 2, unchanged.
+
+## Voice, identity and takeaways pass - 2026-10-06
+
+Goal: a stranger understands each project without prior context and leaves with methods they could reuse, in a first-person voice that sounds like a person.
+
+Decisions:
+- **Identity.** Visible name is "Alp" everywhere (`SITE.name`). The legal name lives only in `SITE.legalName`, used for JSON-LD `alternateName` and the CV file, so a search for it still resolves. Rejected: the full name in the hero, because it wrapped badly at display size and the owner does not want the surname foregrounded.
+- **Projects lead with what they are, not their name.** Schema adds `headline` (the visible heading) and `takeaways` (generalisable lessons, rendered as "What I would reuse" on each case study). `title` is now the short project name, used as a label, in tabs and in the stack readout. `tagline` was removed: its aphorisms assumed the reader already knew the project.
+- **Home "How I work" became "Lessons that carry over".** Each lesson links to the project that taught it (`LESSONS` in `src/data/home.ts`). The process notes (per-repo knowledge base, Obsidian) moved to `/about`.
+- **Copy rules.** First person singular; context before detail; no em or en dashes; no stage-number eyebrows; plain functional labels.
+
+Facts corrected against source repos (checked 2026-10-06):
+- Sage's baseline faithfulness 0.948 is a mean over 11 of 36 questions (judge returned NaN on 25); every baseline metric is now shown with its scored count. The first hybrid-search run (dense + BM25, RRF) changed the judge model at the same time, so it is described as not yet comparable. Source: `sage/evals/scorecard_baseline.md`, `sage/evals/runs/index.jsonl`.
+- Sage's corpus is the LangChain and LangGraph Python docs (`docs.langchain.com/oss/python`); the eval set is split 15/15 between the two.
+- The Munich agent deduplicates by `(source, external_id)` against stored listings from one source. The earlier "three portals, keyed on stable attributes" line was wrong.
+- The RAG baseline post no longer claims the unanswerable category "started at roughly zero" or cites illustrative deltas as if measured.
+
+Carried questions: project motivations written into the intros ("why I built it") are reasonable inferences, not quotes, and need the owner's review. `npm run check:claims` fails on 10 IDs that predate this pass because the dossier holds only 15 claims.

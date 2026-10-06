@@ -5,7 +5,7 @@ location: Würzburg, Germany
 kind: education
 start: 2021-04-01
 end: 2024-09-30
-period: April 2021 – September 2024
+period: April 2021 - September 2024
 claims: [edu.wuerzburg_bsc]
 ---
 

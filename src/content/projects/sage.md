@@ -1,11 +1,16 @@
 ---
 title: Sage
+headline: Learning RAG by building it by hand, and measuring every step
 summary: >-
-  A RAG pipeline built by hand over 185 pages of docs, with a hand-labelled golden set and a
-  longitudinal RAGAS baseline. The harness took longer than the pipeline, which turned out
-  to be correct.
-tagline: Building retrieval by hand, so that every part of it could be measured.
-stack: [Python, Qdrant, RAGAS, FastAPI, OpenRouter, Cohere]
+  A question-answering system over the LangChain and LangGraph docs, built without a RAG
+  framework so I could see every part: chunking, hybrid search, reranking, and an
+  evaluation set I labelled myself.
+takeaways:
+  - Build the test set before tuning anything, and write its answers yourself. If a model writes the answers and also grades against them, their agreement measures nothing.
+  - Read the worst cases, not just the average. My lowest scores were mostly correct refusals that the metric had no way to reward.
+  - Check how many questions each score is based on. A judge that fails quietly shrinks your test set without telling you.
+  - Change one thing per comparison. I swapped the judge model between two runs and lost the ability to read the result.
+stack: [Python, Qdrant, BM25, RAGAS, FastAPI, Cohere]
 period: "2026"
 status: building
 order: 20
@@ -13,93 +18,114 @@ featured: true
 claims: [proj.sage]
 ---
 
-Sage is a retrieval-augmented generation system over the LangChain documentation: 185 pages
-from a 1,418-URL sitemap, about 4,800 chunks. Frameworks will hand you a working RAG
-pipeline in an afternoon. The point here was to implement the mechanics by hand so that
-every decision inside them was mine to measure and change, so the pipeline talks to an
-OpenAI-compatible API over plain `httpx` and the raw request and response shapes stay
-visible.
+I wanted to understand retrieval-augmented generation properly, not just get it working. A
+framework will give you a RAG pipeline in an afternoon, but then every interesting decision
+has been made for you. So I built Sage by hand: my own chunker, my own calls to the
+embedding and chat APIs over plain HTTP, my own retrieval loop. Every part is something I
+can open, swap, and measure.
 
-The corpus choice was the first real decision and it took ten minutes to make and would
-have taken a week to discover as a bug. The obvious source is `llms.txt`, which the docs
-publish for exactly this purpose. It hard-truncates at 100,000 characters and omits the
-entire section I actually needed. The sitemap does not.
+## What it reads
 
-## Ports, and the day they paid for themselves
+Sage answers questions about the LangChain and LangGraph Python documentation. I picked it
+because I use those docs myself, so I can tell a good answer from a plausible one.
 
-Chunker, Embedder, VectorStore and Generator are Python `Protocol`s. Adapters self-register
-with a factory keyed off config, and nothing outside the adapter directory is allowed to
-import a backend SDK. This reads as over-architecture right up until you need to compare two
-backends on the same corpus and the comparison is one environment variable rather than a
-branch.
+The first decision was where to get the pages. The docs publish an `llms.txt` file meant for
+exactly this, but it stops at 100,000 characters and leaves out the section I needed most.
+The sitemap lists 1,418 URLs. I took the 185 pages of the Python docs from it, which came to
+about 4,800 chunks in a Qdrant vector store.
 
-It proved itself in an unplanned way. Adding a reranking stage months later was a new port,
-two adapters and one config knob, with no change to the query loop at all. The baseline
-scorecard said `context_precision` was the weakest metric, and the whole intervention aimed
-at that one number was a bounded, revertible change.
+## A test set I wrote by hand
 
-## The numbers, and the one that is lying
+Before tuning anything, I needed a way to tell whether a change helped. I had a model draft
+90 candidate questions, then wrote every ground-truth answer myself, one at a time. I kept
+36. They fall into four kinds:
 
-The baseline over 36 hand-labelled triples:
+- **Easy**: the answer sits in one place in the docs.
+- **Hard**: the answer is there, but the question uses different words than the docs do.
+- **Multi-hop**: the answer needs two pages that do not mention each other.
+- **Unanswerable**: the docs do not cover it, and the right answer is to say so.
 
-| Metric | Score |
-|---|---|
-| Faithfulness | 0.948 |
-| Answer relevancy | 0.620 |
-| Context precision | 0.593 |
-| Context recall | 0.679 |
+The unanswerable ones matter more than they look. A system that always produces an answer
+will look great until someone asks it something it does not know.
 
-`answer_relevancy` at 0.620 looks like the second-worst problem here. It is mostly not a
-problem at all. When I read the worst-scoring cases, most of them were the deliberately
-unanswerable questions, correctly refused, scoring zero for relevancy because the metric has
-no way to reward abstention. The system doing the right thing is indistinguishable, to
-RAGAS, from the system failing.
+Each answer is scored with four [RAGAS](https://docs.ragas.io) metrics, and each one points
+at a different part of the pipeline:
 
-That is the actual reason to read individual failures rather than a mean. The number told me
-where to look; it did not tell me what it meant.
+| Metric | Question it asks | If it is low, look at |
+|---|---|---|
+| Faithfulness | Is the answer backed by the retrieved text? | Generation |
+| Answer relevancy | Does the answer address the question? | Generation |
+| Context precision | Was the retrieved text mostly useful? | Retrieval |
+| Context recall | Did retrieval find what the answer needs? | Retrieval |
 
-## The labels are never written by AI
+That split is the most useful idea I took from this project. "The answers got worse" is not
+something you can fix. "Recall dropped while faithfulness held" tells you the retriever is
+the problem and the model is doing its job.
 
-Ninety candidate questions were drafted by a model. Turning them into the golden set
-required me to hand-write every ground-truth answer, one line at a time, on a worksheet
-where blank lines get dropped.
+## The first baseline, read honestly
 
-This is not ceremony. The eval set is the ground truth the LLM judge is checked against. If
-a model writes both sides, agreement between them measures nothing.
+| Metric | Score | Questions scored |
+|---|---|---|
+| Faithfulness | 0.948 | 11 of 36 |
+| Answer relevancy | 0.620 | 20 of 36 |
+| Context precision | 0.593 | 17 of 36 |
+| Context recall | 0.679 | 13 of 36 |
 
-## What building it actually cost
+I had been quoting the 0.948 on its own. Then I looked at the last column. The judge model
+failed to return a usable score on most of the questions, so that number is an average over
+eleven of them. It is real, but it is not the score of my test set.
 
-The parts of this that consumed real time were not the retrieval mechanics.
+The relevancy number taught me something else. Most of the worst cases were unanswerable
+questions that Sage correctly declined. The metric has no way to reward "this is not in the
+docs", so a correct refusal scores zero, exactly like a failure. The average told me where to
+look. Only reading the individual answers told me what it meant.
 
-**A reranker that segfaults.** I chose a local cross-encoder to keep the stack free of paid
-dependencies. It crashes the process with exit 139 and no Python traceback. Bisecting it
-established that the Qdrant client's Rust extension and torch cannot coexist in one process
-on this machine, in either load order, before any Qdrant client is even constructed. Not
-memory, not an OpenMP duplicate runtime. I switched that one stage to a hosted rerank API,
-which sidesteps the conflict entirely and breaks the all-free stack, and left the local
-adapter registered and documented as blocked rather than deleting the evidence.
+## Hybrid search
 
-**Idempotent ingestion that never prunes.** Chunk IDs are content hashes, so re-running over
-an unchanged corpus is a no-op. It only ever upserts, though, so when a page's text changes,
-its old chunks keep their old IDs and linger. The stored vector count legitimately exceeds
-the count just embedded, 4,893 against 4,842 on one run, and a clean rebuild means deleting
-the store. That is a documented cost, not a bug, and knowing which it is saved me an
-afternoon.
+Embeddings are good at meaning and bad at exact names. Ask about `InMemorySaver` and dense
+search may return a chunk about memory in general. Keyword search has the opposite
+strengths.
 
-**Evaluation economics.** One RAGAS pass over 36 triples is 144 judge calls and takes around
-27 minutes at free-tier rates. On one memorable day all four free judge routes failed for
-four unrelated reasons: a local gateway with zero connected credentials that hung instead of
-erroring, an account with no credit, a provider whose org-wide daily token budget ran out at
-job 30 of 144, and a fourth that reached job 139 of 144 before hitting a daily request cap.
+So I added BM25 keyword search next to the vector search and merged the two ranked lists
+with reciprocal rank fusion, which I wrote myself against a set of tests: each chunk scores
+by its position in each list, and chunks that rank well in both rise to the top. The
+retriever now pulls 30 candidates and passes the best 5 to the model.
 
-That last one is the instructive failure. The generate phase caches per answer and resumes;
-the score phase does not, and the scorecard is only written once every job succeeds. Dying
-at 97% therefore burned the entire daily quota and produced nothing. The asymmetry between
-those two phases is the actual defect, and it is invisible until something kills a run near
-the end.
+The first scored run came back worse on paper: recall 0.629, precision 0.564. But between
+the two runs I had also moved the judge to a different model, and the new judge scored
+almost every question where the old one had managed between a third and a half. Two things changed at once,
+so the comparison tells me nothing yet. The next step is to score the baseline again with
+the same judge. It is an unexciting step, and skipping it would make every number after it
+meaningless.
 
-## Where it runs
+## Built to be swapped
 
-The same query loop backs both a CLI and a FastAPI service, which is what [Atlas](/work/atlas)
-calls for its retrieval page. Retrieval work continues against the baseline; nothing changes
-in the pipeline without a scored comparison.
+The chunker, embedder, vector store, keyword retriever, reranker and generator are each
+behind a small Python interface, and config decides which implementation runs. That sounds
+like over-engineering for a learning project. It is what made hybrid search and reranking
+cheap to add: each one was a new piece plugged into the same loop, testable against the
+baseline with a single setting.
+
+## What it cost
+
+**A reranker that crashed the process.** I wanted a local reranking model to keep everything
+free. It killed Python with a segfault and no traceback. After bisecting, it turned out the
+vector database client and PyTorch cannot live in the same process on my machine. I moved
+reranking to a hosted API and documented the local option as blocked instead of deleting it.
+
+**Evaluation runs that were not resumable.** One full scoring pass is 144 judge calls and
+takes about half an hour on free tiers. Answer generation was cached and could resume;
+scoring was not, and the scorecard was only written at the very end. One run died at 97%
+when a daily limit ran out and produced nothing at all. Every slow, expensive step in a
+pipeline should be able to pick up where it stopped.
+
+**Re-indexing that never cleans up.** Chunk IDs are hashes of their content, so re-running
+ingestion is safe and cheap. When a page changes, though, its old chunks stay behind. Knowing
+that is a deliberate trade-off rather than a bug saved me an afternoon of debugging.
+
+## Where it is now
+
+Sage runs as a command-line tool and as a small API, which [Atlas](/work/atlas) uses for its
+retrieval page. Next on the list is a fair hybrid-search comparison, then contextual
+retrieval: giving each chunk the page title and section headings it lost when it was cut
+out, so a chunk that says "pass it to the constructor" still knows which class it is about.

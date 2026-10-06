@@ -16,18 +16,28 @@ const claims = z.array(z.string()).default([]);
 const projects = defineCollection({
   loader: glob({ base: './src/content/projects', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    /** The project's name. Secondary: shown as a label, used in tabs and the stack readout. */
     title: z.string(),
-    /** One sentence for the index list. Keep it under ~200 characters. */
+    /** What it is, in words a stranger understands. The visible heading everywhere. */
+    headline: z.string(),
+    /** Two plain sentences: what it does and why I built it. Under ~240 characters. */
     summary: z.string(),
-    /** Longer hook shown at the top of the case study. */
-    tagline: z.string().optional(),
+    /** Lessons that carry over to other projects. The first one is shown on cards. */
+    takeaways: z.array(z.string()).default([]),
     stack: z.array(z.string()).min(1),
     period: z.string(),
     status: z.enum(['live', 'shipped', 'building', 'archived']),
     /** Lower sorts first within the work index. */
     order: z.number().default(100),
     featured: z.boolean().default(false),
+    recognition: z.string().optional(),
+    media: z.array(z.object({
+      src: z.string().startsWith('/project-media/'),
+      alt: z.string().min(1),
+      caption: z.string().min(1),
+    })).default([]),
     repo: z.string().url().optional(),
+    sourceReviewed: z.boolean().default(false),
     demo: z.string().url().optional(),
     draft: z.boolean().default(false),
     claims,

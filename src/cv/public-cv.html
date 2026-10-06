@@ -1,0 +1,109 @@
+<!doctype html>
+<!-- Public-only CV. Fact sources: site case studies and journey entries for exp.flexus,
+     edu.tum_msc.active_enrollment, edu.wuerzburg_bsc, proj.munich_agent,
+     proj.sage, and proj.voice_scheduler. Streamline placement is the owner's
+     firsthand correction on 2026-10-06; no public winners list was found.
+     Do not import employer-specific PDFs or private contact fields here. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Ali Alp Oezer - CV</title>
+  <style>
+    @page { size: A4; margin: 14mm 17mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #1d1d1f; font: 10pt/1.35 Arial, Helvetica, sans-serif; }
+    a { color: #005bb5; text-decoration: none; }
+    header { border-bottom: 1px solid #b8bcc5; padding-bottom: 8mm; margin-bottom: 7mm; }
+    h1 { margin: 0; font-size: 24pt; letter-spacing: -.035em; line-height: 1; }
+    .role { margin: 2mm 0 4mm; font-size: 12pt; color: #005bb5; font-weight: 700; }
+    .contact { display: flex; flex-wrap: wrap; gap: 2mm 5mm; font-size: 8.5pt; color: #555b65; }
+    .summary { margin: 0 0 7mm; font-size: 10.2pt; max-width: 170mm; }
+    h2 { margin: 6mm 0 2.5mm; color: #005bb5; text-transform: uppercase; font-size: 8.5pt; letter-spacing: .12em; }
+    h3 { margin: 0; font-size: 10pt; }
+    .entry { break-inside: avoid; margin-bottom: 4.5mm; }
+    .entry-head { display: flex; justify-content: space-between; gap: 5mm; align-items: baseline; }
+    .date { white-space: nowrap; font-size: 8.5pt; color: #555b65; }
+    .sub { color: #555b65; font-size: 8.7pt; margin: .5mm 0 1.2mm; }
+    p { margin: 0 0 1.5mm; }
+    ul { margin: 1mm 0 0; padding-left: 4mm; }
+    li { margin: 0 0 1mm; padding-left: .5mm; }
+    .projects { display: grid; grid-template-columns: 1fr 1fr; column-gap: 9mm; row-gap: 1mm; }
+    .projects .entry { margin-bottom: 3.5mm; }
+    .skills { display: grid; grid-template-columns: 30mm 1fr; gap: 1.5mm 4mm; }
+    .skills dt { font-weight: 700; }
+    .skills dd { margin: 0; }
+    .footer { border-top: 1px solid #b8bcc5; padding-top: 3mm; margin-top: 5mm; color: #555b65; font-size: 8pt; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ali Alp Özer</h1>
+    <p class="role">AI Engineer</p>
+    <div class="contact">
+      <span>Munich, Germany</span>
+      <a href="mailto:alialp@live.com">alialp@live.com</a>
+      <a href="https://alialpoezer.github.io">alialpoezer.github.io</a>
+      <a href="https://github.com/AliAlpOezer">github.com/AliAlpOezer</a>
+      <a href="https://linkedin.com/in/alialpozer">linkedin.com/in/alialpozer</a>
+    </div>
+  </header>
+
+  <p class="summary">I build agentic systems, retrieval pipelines, and interfaces that make complex work usable. Before focusing on applied AI, I spent over three years developing enterprise software at Flexus AG, from backend architecture to the fleet-management cockpit.</p>
+
+  <section>
+    <h2>Experience</h2>
+    <div class="entry">
+      <div class="entry-head"><h3>Software Developer and Technical Product Manager · Flexus AG</h3><span class="date">Mar 2023 - Jul 2026</span></div>
+      <p class="sub">Würzburg, Germany · Intralogistics Hybrid Fleet Manager</p>
+      <ul>
+        <li>Designed the SAP CAP backend, data models, and query APIs across SAP HANA and PostgreSQL.</li>
+        <li>Built fleet-routing business logic and owned the SAP UI5 fleet-management cockpit.</li>
+        <li>Shaped the cockpit's user experience and roadmap for an SAP Innovation Award-winning application.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Selected projects</h2>
+    <div class="projects">
+      <div class="entry">
+        <h3>Streamline</h3>
+        <p class="sub">Industrial water planning · React</p>
+        <p>Visual workspace for mapping water flows, assessing reuse opportunities, and comparing proposed scenarios. Team second place at the Munich EIT Water Hackathon; individual third-place student award.</p>
+      </div>
+      <div class="entry">
+        <h3>Munich Apartment Agent</h3>
+        <p class="sub">Autonomous agent · Python, LangGraph, SQLite</p>
+        <p>Runs on a three-hour schedule to find and assess housing listings. Durable checkpoints, evaluation, and heartbeat reporting make unattended operation observable.</p>
+      </div>
+      <div class="entry">
+        <h3>Sage</h3>
+        <p class="sub">Retrieval and evaluation · Python, Qdrant, RAGAS</p>
+        <p>Built a retrieval pipeline over 185 documentation pages, with a hand-labelled golden set and a longitudinal evaluation baseline.</p>
+      </div>
+      <div class="entry">
+        <h3>Voice Scheduler</h3>
+        <p class="sub">Voice agent · TypeScript, MCP, SQLite</p>
+        <p>German-language booking agent with speech input and output, a bounded tool loop, and separate adapters for restaurant and medical-practice workflows.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Education</h2>
+    <div class="entry-head"><h3>MSc Wirtschaftsinformatik · Technical University of Munich</h3><span class="date">From Oct 2026</span></div>
+    <div class="entry-head"><h3>BSc Wirtschaftsinformatik · University of Würzburg</h3><span class="date">Apr 2021 - Sep 2024</span></div>
+  </section>
+
+  <section>
+    <h2>Technical strengths</h2>
+    <dl class="skills">
+      <dt>AI systems</dt><dd>Agent orchestration, tool calling, retrieval, evaluation harnesses, MCP</dd>
+      <dt>Engineering</dt><dd>Python, TypeScript, JavaScript, SQL, FastAPI, React, SAP CAP, SAP UI5</dd>
+      <dt>Data &amp; delivery</dt><dd>Qdrant, PostgreSQL, SQLite, SAP HANA, GitHub Actions, Linux</dd>
+    </dl>
+  </section>
+
+  <p class="footer">Project write-ups and current work: alialpoezer.github.io/work</p>
+</body>
+</html>

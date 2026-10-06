@@ -9,16 +9,18 @@ const { shipped } = Astro.props;
 
 const items = [
   ...shipped.map((s) => ({ name: s.name, tier: 'shipped' as const, projects: s.projects })),
-  ...EXPLORED.map((name) => ({ name, tier: 'explored' as const, projects: [] })),
+  // A technology that later shipped in a project only appears once, as shipped.
+  ...EXPLORED.filter((name) => !shipped.some((s) => s.name === name))
+    .map((name) => ({ name, tier: 'explored' as const, projects: [] })),
 ];
 ---
 
 <div class="stack">
   <div class="aside">
-    <p class="eyebrow">Everything I have touched</p>
-    <h2>The stack</h2>
+    <p class="eyebrow">Tools</p>
+    <h2>What I build with</h2>
     <p class="readout" id="stack-readout" aria-live="polite">
-      Select a technology to see where it is actually used.
+      Pick one to see which projects use it.
     </p>
   </div>
   <div>
@@ -35,8 +37,8 @@ const items = [
       ))}
     </div>
     <p class="legend">
-      <span><i></i>shipped with</span>
-      <span><i class="dashed"></i>explored, not shipped</span>
+      <span><i></i>used in a project</span>
+      <span><i class="dashed"></i>tried, not in a public project yet</span>
     </p>
   </div>
 </div>
@@ -83,9 +85,9 @@ const items = [
       if (!active) readout.textContent = rest;
       else if (used.length) {
         readout.innerHTML =
-          `<b>${active}</b> ships in ${used.length} project${used.length > 1 ? 's' : ''}: ${used.join(', ')}.`;
+          `<b>${active}</b> is used in ${used.join(', ').replace(/, ([^,]*)$/, ' and $1')}.`;
       } else {
-        readout.innerHTML = `<b>${active}</b> &mdash; explored, not yet shipped in anything public.`;
+        readout.innerHTML = `I have worked with <b>${active}</b>, but not in a public project yet.`;
       }
     });
   }

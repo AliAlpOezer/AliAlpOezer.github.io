@@ -6,12 +6,12 @@ import '../styles/prose.css';
  * A /now page: what is true this month, dated so a reader can tell how stale it is.
  * Update the date whenever you update the content, or do not bother having the page.
  */
-const updated = new Date('2026-08-16');
+const updated = new Date('2026-10-06');
 const long = updated.toLocaleDateString('en-GB', {
   day: 'numeric', month: 'long', year: 'numeric',
 });
 ---
-<Base title="Now" description="What Ali Alp Özer is working on this month.">
+<Base title="Now" description="What Alp is working on this month.">
   <div class="wrap">
     <header class="page-head">
       <p class="label">Now</p>
@@ -23,34 +23,30 @@ const long = updated.toLocaleDateString('en-GB', {
 
     <div class="prose">
       <p>
-        <strong>Building <a href="/work/advocate">Advocate's</a> evidence-grounding layer.</strong>
-        The graph that finds and scores postings works. What I am building now is the part
-        that makes the generator structurally unable to invent a fact: it may only select
-        claim IDs from a graded store and write the prose between them.
+        <strong>Starting at TUM.</strong> My MSc in Information Systems begins this month. The
+        goal is the formal side of what I have been teaching myself: the maths under the
+        models, not just the APIs on top of them.
       </p>
-
       <p>
-        <strong>Starting the MSc at TUM in October.</strong> Sorting out the practical side
-        of moving to Munich properly, and reading ahead so the first semester is not a
-        standing start.
+        <strong>Getting a fair answer out of Sage.</strong> I added hybrid search, keyword and
+        vector search combined, to my <a href="/work/sage">RAG project</a>. The first result
+        looked worse, but I had changed the judge model at the same time, so it proves nothing
+        yet. Next is scoring the old setup again with the same judge.
       </p>
-
       <p>
-        <strong>Fine-tuning, the last block.</strong> Final section of the sixteen-week
-        program I have been running since June. It is the block I have been least comfortable
-        with, which is presumably why it is worth doing.
+        <strong>Building Advocate.</strong> My application agent can search, draft and check.
+        The one part that would send something on my behalf is deliberately still unbuilt.
       </p>
-
       <p>
-        <strong>Writing more.</strong> I have been building considerably faster than I have
-        been writing it down, and the writing is what makes any of it useful to someone else.
+        <strong>Writing it down.</strong> Every project page on this site now ends with what I
+        would reuse elsewhere. The blog is behind the projects, and I am catching it up one post
+        at a time.
       </p>
-
       <hr />
 
       <p class="foot">
         This is a <a href="https://nownownow.com/about" rel="noopener">now page</a>. If it is
-        badly out of date, that is a fair thing to hold against me.
+        badly out of date, feel free to remind me.
       </p>
     </div>
   </div>

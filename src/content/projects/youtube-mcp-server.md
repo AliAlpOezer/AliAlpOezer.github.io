@@ -1,10 +1,13 @@
 ---
 title: YouTube MCP Server
+headline: Giving AI assistants YouTube transcripts that keep the video's structure
 summary: >-
-  A published Model Context Protocol server that reflows fragmented captions into prose
-  organised under the video's own chapters, so a model reads authored structure instead of
-  a flat wall of text.
-tagline: Structure the input and the output improves without touching the model.
+  An open-source MCP server that lets Claude and other AI assistants read YouTube videos. It
+  turns choppy captions into readable paragraphs, grouped under the video's own chapters.
+takeaways:
+  - Before tuning the prompt, improve the input. Structure the author already created is free and worth more than clever instructions.
+  - In a stdio MCP server, standard output is the protocol. Any library that prints to it breaks the connection silently.
+  - Do not let a model "repair" source data. A plausible wrong word is worse than an obviously garbled one.
 stack: [Python, MCP, yt-dlp]
 period: "2026"
 status: shipped
@@ -13,32 +16,34 @@ repo: https://github.com/AliAlpOezer/youtube-mcp-server
 claims: [proj.youtube_mcp]
 ---
 
-An open-source MCP server exposing two tools, `get_transcript` and `get_video_info`, to
-Claude and any other MCP client. No API key, no quota, no Google Cloud project, because it
-is backed by yt-dlp rather than the YouTube Data API.
+I watch a lot of long technical videos and wanted to ask an assistant about them instead of
+scrubbing through. So I wrote a small server for the
+[Model Context Protocol](https://modelcontextprotocol.io), the standard way to give AI assistants
+new tools. It offers two: `get_transcript` and `get_video_info`.
 
-## Why it is not a transcript dump
+It needs no API key, no quota and no Google Cloud project, because it uses
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) instead of the official YouTube API.
 
-Caption data arrives as timed cues of a few words each. Concatenate them and you get an
-unbroken wall of text with no paragraphs and no hierarchy, and a model reading it has to
-reconstruct the shape of the video from scratch, badly, before it can answer anything about
-it.
+## Why not just dump the transcript
 
-This server reflows those cues into prose and buckets the prose under the video's **own
-chapter headings**, with timestamps. The creator already did the work of dividing the
-material into topics. Handing that structure to the model is free, and it is worth more than
-any prompt engineering applied downstream.
+Captions arrive as timed snippets of a few words each. Join them and you get one long wall of
+text with no paragraphs and no structure. A model reading that has to rebuild the shape of the
+video from scratch, badly, before it can answer anything about it.
 
-Videos without chapters fall back to reflowing into paragraphs of roughly 700 characters,
-which is the least-bad guess in the absence of authored structure.
+This server joins the snippets into prose and groups it under the video's **own chapter
+headings**, with timestamps. The creator already split the video into topics. Passing that
+structure along costs nothing and helps more than any prompt written downstream.
 
-## The bug that defines MCP over stdio
+Videos without chapters fall back to paragraphs of about 700 characters, the least bad guess
+when there is no structure to follow.
 
-The transport is stdio. Which means stdout *is* the JSON-RPC channel. Anything else that
-writes a byte to stdout corrupts the protocol, and yt-dlp is a command-line tool whose
-default behaviour is to print progress to stdout.
+## The bug every stdio MCP server can have
 
-The fix is four layers deep, and every one of them is load-bearing:
+The server talks to the assistant over standard input and output. That means standard output
+*is* the protocol channel, and anything else that prints there corrupts it. yt-dlp is a
+command-line tool, and printing progress to standard output is exactly what it does by default.
+
+The fix took four layers of settings:
 
 ```python
 _COMMON_OPTS = {
@@ -51,34 +56,31 @@ _COMMON_OPTS = {
 }
 ```
 
-...plus a `contextlib.redirect_stdout(sys.stderr)` wrapped around every call that touches the
-library, because configuration flags only silence the paths the library knows about.
+On top of that, every call into the library is wrapped in `contextlib.redirect_stdout(sys.stderr)`,
+because settings only silence the output paths the library knows about.
 
-This is the thing nobody tells you about writing an MCP server. The protocol work is
-trivial; the hazard is that a well-behaved library writing a perfectly reasonable log line
-manifests as a client that mysteriously fails to connect, with nothing in any log to explain
-it. Worth internalising once, because every stdio server you ever write has the same
-exposure.
+Nobody warns you about this. The protocol itself is simple. The danger is that a well-behaved
+library writing one ordinary log line shows up as a client that mysteriously fails to connect,
+with nothing in any log to explain it. Every stdio server you write has the same risk.
 
-## Small decisions that made it work
+## Small decisions that helped
 
-**One metadata call, not three.** A single `extract_info` returns caption track URLs,
-chapter list and video metadata together. Only the chosen caption track needs a second
-request.
+**One metadata request instead of three.** A single call returns the caption links, the chapter
+list and the video details together. Only the chosen caption track needs a second request.
 
-**Prefer `json3`, keep the VTT parser as a fallback.** Both formats appear in the wild. VTT
-needs a de-duplication pass that json3 does not: auto-generated captions roll, repeating the
-previous line as each new one scrolls in, so a naive parse produces every sentence twice.
+**Prefer the JSON caption format, keep a fallback.** Both JSON and VTT captions show up in
+practice. VTT needs an extra cleanup pass: auto-generated captions roll, repeating the previous
+line as each new one appears, so a naive parser produces every sentence twice.
 
-**Chapter bucketing in one monotonic pass.** Cues are already time-ordered, so the chapter
-index only ever advances. No re-scanning, no sorting per cue.
+**Chapters in one pass.** Captions are already in time order, so the current chapter only ever
+moves forward. No sorting, no searching.
 
-**Preserve unicode rather than escaping it.** Accents, non-Latin scripts and symbols survive
-intact, which matters the moment the video is not in English.
+**Keep Unicode as it is.** Accents, other scripts and symbols come through intact, which
+matters as soon as a video is not in English.
 
 ## What it deliberately does not do
 
-Auto-generated captions have no punctuation and contain speech-recognition errors. This
-server does not try to repair them. Any cleanup pass is a model guessing at what was said,
-and a plausible wrong word is worse than an obviously garbled one. Models read through ASR
-noise perfectly well; videos with manual captions come out cleaner for free.
+Auto-generated captions have no punctuation and contain recognition errors. The server does not
+try to fix them. Any cleanup would be a model guessing what was said, and a plausible wrong word
+is worse than an obviously garbled one. Models read through caption noise well, and videos with
+human-written captions come out clean anyway.

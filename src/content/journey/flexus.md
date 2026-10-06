@@ -5,7 +5,7 @@ location: Würzburg, Germany
 kind: work
 start: 2023-03-01
 end: 2026-07-31
-period: March 2023 – July 2026
+period: March 2023 - July 2026
 claims: [exp.flexus]
 ---
 

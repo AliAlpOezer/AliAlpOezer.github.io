@@ -1,10 +1,14 @@
 ---
 title: Nemotron Delegate
+headline: A helper that keeps bulk reading out of my expensive context window
 summary: >-
   An MCP server that keeps bulk reading out of an expensive context window, sized against
   47 logged calls rather than assumptions. The measurements contradicted the limits I had
   already written into it.
-tagline: I wrote the capacity limits from intuition, then read the log and found every one of them wrong.
+takeaways:
+  - Measure before you set limits. My log showed throughput was flat, so the input cap I had tuned guarded nothing.
+  - When quota is counted in requests, not tokens, splitting a job into smaller calls is the most expensive thing you can do.
+  - A loud refusal beats a confident answer built from half the material.
 stack: [Python, MCP, LiteLLM, OpenRouter]
 period: "2026"
 status: live

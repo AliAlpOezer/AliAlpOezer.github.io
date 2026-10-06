@@ -8,6 +8,5 @@ period: From October 2026
 claims: [edu.tum_msc.active_enrollment]
 ---
 
-Enrolled and starting this winter semester. The plan is to push the formal side of what I
-have been teaching myself: the mathematics under the models rather than the APIs on top of
-them.
+Information Systems, starting this winter semester. I want the formal side of what I have
+been teaching myself: the mathematics under the models, not just the APIs on top of them.

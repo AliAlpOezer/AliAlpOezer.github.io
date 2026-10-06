@@ -1,16 +1,14 @@
 ---
 title: Self-directed AI engineering program
-org: Built in public
+org: Self-directed
 kind: milestone
 start: 2026-06-01
-period: June 2026 – present
+period: June 2026 - present
 claims: [learning.ai_sprint]
 ---
 
-Sixteen weeks, structured like a syllabus rather than a reading list: LLM applications,
-retrieval, agents, evaluation, and fine-tuning. Every block ends in a shipped repository
-rather than a certificate, which is why [Sage](/work/sage),
-[Voice Scheduler](/work/voice-scheduler) and the
-[Munich Apartment Agent](/work/munich-apartment-agent) all exist.
-
-Currently on the last block.
+Sixteen weeks I designed for myself, built like a syllabus rather than a reading list: LLM
+applications, retrieval, agents, evaluation, and fine-tuning. The one rule was that every
+block had to end in a repository that runs, not a certificate. That rule is why
+[Sage](/work/sage), the [Voice Scheduler](/work/voice-scheduler) and the
+[apartment agent](/work/munich-apartment-agent) exist.

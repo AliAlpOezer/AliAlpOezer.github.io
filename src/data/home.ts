@@ -16,60 +16,65 @@ export const EXPLORED = [
   'Docker', 'React', 'Obsidian', 'Cloudflare', 'LiteLLM',
 ] as const;
 
-/** The set piece: one real system, opened up stage by stage.
+/** The set piece: one real system, opened up step by step.
  *
- *  Every line here is sourced from the Munich agent's own decision record.
- *  If that project changes, this changes with it. */
+ *  Every line here is checked against the Munich agent's own code and decision
+ *  record. If that project changes, this changes with it. */
 export const PIPELINE = [
   {
-    name: 'Scrape',
-    mode: 'deterministic',
-    body: 'A plain HTTP client gets refused, so the fetch layer presents a real browser TLS fingerprint. This is the only stage whose job is to be indistinguishable from a person.',
+    name: 'Fetch',
+    mode: 'code',
+    body: 'Get the newest listings. Ordinary scripts get blocked, so the requests carry the same network fingerprint as Chrome. This is the most fragile step, so it sits behind its own interface and can change without touching anything else.',
   },
   {
     name: 'Filter',
-    mode: 'deterministic',
-    body: 'Hard criteria first, in code: rent ceiling, rooms, district. Cheap, total, and it means the model never spends a token on a listing that already failed a rule.',
+    mode: 'code',
+    body: 'Rent, size, move-in date, distance. These are rules, so they are code: tested, instant, and the same answer every time. Anything that passes gets its detail page checked for the real rent, utilities included, and is filtered again.',
   },
   {
-    name: 'Dedup',
-    mode: 'deterministic',
-    body: 'The same flat is posted to three portals under three different IDs. Keyed on the attributes that do not change between listings, then written once.',
+    name: 'Skip seen',
+    mode: 'code',
+    body: 'Most listings were already there three hours ago. Anything already saved is dropped, and if nothing new is left, the run ends right here and nothing after it runs.',
   },
   {
-    name: 'Enrich',
+    name: 'Read',
     mode: 'model',
-    body: 'The one stage the model owns. Free-text descriptions carry what the structured fields never do, and reading prose is the thing a language model is actually better at than I am.',
+    body: 'The one step the model owns. It reads each description and judges how well the flat fits me. Free text says things the structured fields never do, and reading prose is what a language model is genuinely good at.',
   },
   {
-    name: 'Persist',
-    mode: 'deterministic',
-    body: 'Local SQLite. Supabase was in here and was removed on purpose: a hosted database for a single-user agent bought nothing and cost a network hop on every cycle.',
+    name: 'Save',
+    mode: 'code',
+    body: 'Everything goes into one local SQLite file. The first version used a hosted database, which for one user on one machine only added a network hop and another set of credentials.',
   },
   {
     name: 'Notify',
-    mode: 'deterministic',
-    body: 'A message per new match, and a heartbeat on every cycle whether or not there is anything to say. Without the heartbeat, a silent agent and a dead agent look identical.',
+    mode: 'code',
+    body: 'A Telegram message for each good match, and a short heartbeat on every run, even when there is nothing to report. Without it, an agent that died and an agent with nothing to say look exactly the same.',
   },
 ] as const;
 
-/** How I work. The content pivot: lead with method, not with inventory. */
-export const METHOD = [
+/** Lessons that carry over. Each one is drawn from a project and links back to it,
+ *  so the method is shown with its evidence rather than asserted. */
+export const LESSONS = [
   {
-    title: 'A knowledge base per repo',
-    body: 'Every project I keep carries a context pack: decisions with the alternatives I rejected, the gotchas that cost me a day, and an honest current status. It is written to be read cold by a model. The test is whether a fresh session resumes from the conclusion instead of the transcript.',
+    title: 'Measure retrieval before tuning it',
+    body: 'Retrieval is one of the few parts of an LLM system you can actually score. I write the test answers myself, split the scores by stage, and read the worst cases, because the average alone has misled me more than once.',
+    from: { name: 'Sage', href: '/work/sage' },
   },
   {
-    title: 'Obsidian is the room I argue in',
-    body: 'Notes are not storage. They are where a half-formed idea gets taken apart before it costs anything. What survives the argument gets promoted into a repository’s context pack; the rest stays a note, which is the correct outcome for most ideas.',
+    title: 'Code decides, the model reads',
+    body: 'Rules that must be right live in plain, tested code. The model gets the fuzzy part, like reading a listing’s description. When something goes wrong, I can tell which side caused it.',
+    from: { name: 'the apartment agent', href: '/work/munich-apartment-agent' },
   },
   {
-    title: 'Retrieval, because it is falsifiable',
-    body: 'Generation quality is largely a matter of taste, and taste does not survive a disagreement. Retrieval quality is a number on a golden set, and it either went up or it did not. That is the part of an LLM system where I can still be provably wrong, so it is the part I went at first.',
+    title: 'Check the output, not the exit code',
+    body: 'A process that exits cleanly has not necessarily done its job. A step in my agents is finished when separate code has checked what it produced, not when the model says it is done.',
+    from: { name: 'Advocate', href: '/work/advocate' },
   },
   {
-    title: 'Sixteen weeks, ending in repositories',
-    body: 'LLM applications, retrieval, agents, evaluation, fine-tuning — structured like a syllabus rather than a reading list. Every block ends in a shipped repository rather than a certificate, which is why Sage, Voice Scheduler and the Munich agent all exist.',
+    title: 'Hide the wait you cannot remove',
+    body: 'In a voice conversation, one second of silence feels broken. When no model is fast enough, the design has to cover the gap: a short filler phrase, streamed speech, sentences cut at natural pauses.',
+    from: { name: 'Voice Scheduler', href: '/work/voice-scheduler' },
   },
 ] as const;
 
@@ -77,7 +82,7 @@ export const METHOD = [
  *  that counts up invites the reader to watch the animation instead of
  *  reading the number. */
 export const FIGURES = [
-  { value: '185', note: 'pages indexed by hand for Sage, from a 1,418-URL sitemap.' },
-  { value: '0.948', note: 'faithfulness on a hand-labelled golden set of 36 triples.' },
-  { value: '3h', note: 'timer driving the Munich agent, unattended, on a home server.' },
+  { value: '36', note: 'test questions I answered by hand to grade my RAG system, 14 of them ones it should refuse.' },
+  { value: '~1 s', note: 'the pause my voice agent has to cover before a conversation starts to feel broken.' },
+  { value: '3 h', note: 'between runs of my apartment agent, which works unattended on a small server at home.' },
 ] as const;

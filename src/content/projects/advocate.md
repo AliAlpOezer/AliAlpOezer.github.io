@@ -1,10 +1,15 @@
 ---
 title: Advocate
+headline: An agent that drafts job applications without making things up
 summary: >-
-  An application agent built around two laws: no factual sentence exists without a claim it
-  traces to, and no stage reports success on its own say-so. Both were learned the
-  expensive way.
-tagline: Every component I trusted to tell me it had worked eventually lied about it.
+  It turns a job posting into a tailored CV and German cover letter, but every factual
+  sentence has to trace back to evidence I approved. Nothing gets sent until I press a
+  button.
+takeaways:
+  - Never let a step report its own success. Check what it produced, with code that did not produce it.
+  - Keep facts and prose apart. Let the model choose from approved claims and write only the sentences around them.
+  - If a model keeps stopping halfway through a long task, make the task shorter. Several short stages, each writing one file, beat one long conversation.
+  - Turn taste into a check. If a defect is obvious the moment you see it, you can usually measure it.
 stack: [LangGraph, Python, Postgres, pgvector, Pydantic, Telegram]
 period: "2026"
 status: building
@@ -14,108 +19,104 @@ repo: https://github.com/AliAlpOezer/advocate
 claims: [proj.advocate]
 ---
 
-Advocate writes job applications from an evidence store. Three loops that never call each
-other: a hunt that fills a databank on a timer, a drafter that turns a shortlisted posting
-into a CV and a German cover letter, and a submitter that only ever runs when a human
-pressed a button. They meet in one place, the store, and nowhere else.
+Writing applications is slow, and the obvious shortcut, asking a model to write one, has an
+obvious problem: models are happy to invent experience you do not have. I wanted the speed
+without the invention.
+
+Advocate is three separate loops that never call each other. A search loop collects job
+postings on a timer. A drafting loop turns a shortlisted posting into a CV and a German cover
+letter. A submission loop runs only after I approve a draft. The only thing they share is
+the database between them.
 
 Two rules hold the whole thing up.
 
-## The generator is not allowed to write facts
+## The model is not allowed to write facts
 
-Every factual sentence in a generated document traces to an entry in a claim store. The
-model selects claim IDs and writes the connective prose between them. It does not get to
-assert anything else.
+Every factual sentence in a draft has to trace back to an entry in a claim store: a database
+of things about me that are true and that I have approved. The model picks claim IDs and
+writes the connecting sentences. It cannot state anything else.
 
-The interesting part is what the real evidence did to that schema. I sketched it first as
-you would expect: German text, English text, a grade, a `never_claim` boolean. Then I read
-the actual dossier and found four things that sketch could not express.
+The interesting part was what my real evidence did to that design. I first sketched the
+schema the obvious way: German text, English text, a strength grade, and a "never claim"
+flag. Then I went through my actual records and found four things the sketch could not
+express.
 
-Wording rules that constrain claims which are perfectly true, like *say "familiar with",
-not "read"*. A boolean cannot carry those, and a free-text note invites the drafter to
-paraphrase around them, so phrasings became their own table of required, preferred and
-forbidden strings, with rows that carry no claim ID at all and are scanned against every
-draft. Audience scope, because one section of evidence belongs to a single former employer
-and transfers nowhere. Citation cardinality, because one claim is only assertable when
-paired with at least two of three named artifacts. And a split between *how strong* the
-evidence is and *where it came from*, which turn out to be independent: a self-reported
-fact can be usable, and well-documented coursework must never read as experience.
+Some true claims still come with wording rules, like *say "familiar with", not "read"*. A flag
+cannot hold that, and a free-text note just invites the model to paraphrase around it, so
+required, preferred and forbidden phrasings became their own table, checked against every
+draft. Some evidence only applies to one audience. Some claims can only be made together with
+at least two of three specific pieces of proof. And *how strong* the evidence is turned out to
+be separate from *where it came from*: a self-reported fact can be usable, while
+well-documented coursework must never read as job experience.
 
-A claim now spans two tables and every read needs a join. That is the price of a schema
-that fits the data instead of the sketch.
+A claim now spans two tables, and every read needs a join. That is the cost of a schema that
+fits the data instead of the sketch.
 
 ## Nothing gets to report its own success
 
-The first version of the drafter shelled out to an agent CLI. Two runs died inside the
-first model call, on a 502 and a 504, after 206 and 310 seconds, having written nothing at
-all. **The subprocess exited 0 both times.** The driver logged success. The entire failover
-chain underneath it, key rotation and two backup providers, was gated on a non-zero exit
-that this class of failure never produces.
+The first drafting step called an agent command-line tool. Twice, the model call died inside
+the first request, after 206 and 310 seconds, having written nothing. **The process exited
+with code 0 both times.** My driver logged success. The whole fallback chain underneath it,
+key rotation and two backup providers, only triggered on a non-zero exit, which this kind of
+failure never produces.
 
-The only thing that caught it was an independent checker noticing the output documents were
-still byte-identical to the template.
+The only thing that caught it was a separate checker noticing that the output files were
+still identical to the template.
 
-That is one of five times the same lesson arrived. A provider returned `finish_reason:
-"error"` inside an HTTP 200 with 2,464 completion tokens of reasoning and no content, which
-reads exactly like a model declining the work. A PDF renderer printed "image not found" and
-exited 0. A hunt marked postings as seen before it had judged them.
+That lesson arrived four more times. A provider returned an error inside an HTTP 200, with
+2,464 tokens of reasoning and no content, which looks exactly like a model refusing the
+work. A PDF renderer printed "image not found" and exited 0. A search loop marked postings as
+seen before it had actually evaluated them.
 
-So it is now a law: **success is an observable property of a stage's output, checked by code
-that did not produce it.** There is no `finish` tool. A stage ends when its file is right on
-disk and `problems()` returns empty, not when the model says it is done. Three things fall
-out of that. A failure names a stage rather than a turn count. A retry resumes, because a
-stage whose problems are already empty is skipped without a model call. And the nudge on a
-retry is computed from the folder, so a model that got it nearly right is told about the
-leftover marker, not asked to try harder.
+So it is now a rule: **a stage has succeeded when its output is right, as checked by code that
+did not produce it.** There is no "I'm done" tool for the model to call. A stage ends when its
+file is on disk and the checker finds no problems. A failure then names a stage instead of a
+turn count, a retry skips every stage that is already correct, and the hint on a retry comes
+from what is actually wrong with the file, not a request to try harder.
 
-## The horizon, not the loop
+## Shorter tasks, not a smarter loop
 
-Asked to produce a whole application in one conversation, the model read the posting and
-both templates, wrote a correct strategy document, and then simply stopped emitting tool
-calls. Three turns and four tool calls. With a nudge node live: six turns and the *same*
-four tool calls.
+Asked to produce a whole application in one conversation, the model read the posting and both
+templates, wrote a good plan, and then simply stopped calling tools. Three turns, four tool
+calls. With an extra step that nudged it to continue: six turns and the *same* four tool calls.
 
-The loop was fine. The horizon was too long.
+The loop was fine. The task was too long.
 
-It is five short stages now, each a fresh conversation carrying the same preloaded
-grounding, each writing exactly one file: analyse, draft the CV, draft the letter, map the
-claims, render. Rendering is not a model turn at all, which removed the two tool calls both
-stalled runs died before reaching. Each stage is handed exactly one way to write, so the CV
-stage has no tool that can touch the cover letter.
+Now it is five short stages, each a fresh conversation with the same background material,
+each writing exactly one file: analyse the posting, draft the CV, draft the letter, map the
+claims, render. Rendering is not a model step at all. Each stage only has a tool for its own
+file, so the CV stage cannot touch the cover letter.
 
-The grounding is preloaded rather than fetched, all 85,587 characters of it, straight into
-the system prompt. Under the old harness each document was a read the model could silently
-skip, and a draft written without the dossier looks identical to one written with it until
-you re-check every sentence.
+The background material, all 85,587 characters of it, is put straight into the system prompt
+instead of being fetched with tools. When reading it was optional, the model could skip it,
+and a draft written without the evidence looks the same as one written with it until you check
+every sentence.
 
-## Taste, converted into a gate
+## Taste, turned into a check
 
-Two documents reached the review card that were true, grounded, correct, and unsendable on
-sight. A one-page cover letter that spilled onto a second page carrying only the signature.
-A CV that bolded nothing except the marathons.
+Two drafts reached my review that were true, grounded, correct, and impossible to send. A
+one-page cover letter that spilled onto a second page holding only the signature. A CV that
+put nothing in bold except the marathons.
 
-Neither defect needed a model to catch, and neither is a matter of opinion. There is now a
-layout checker that reads the *rendered PDF* rather than the markup, because a page break is
-a property of the rendering and not of the source: per page it walks the text runs and the
-top and bottom baselines through Chrome's flipped coordinate system, and a last page under
-12% fill carrying under 220 characters is an orphan. On top of it sits a judgement about
-emphasis share, bolded-run length and profile length.
+Neither needs a model to catch, and neither is a matter of opinion. A layout checker now reads
+the *rendered PDF*, because a page break exists in the rendering, not in the source. If the
+last page is less than 12% full and holds under 220 characters, it is an orphan. A second check
+looks at how much of the text is bold and how long the profile is.
 
-The thresholds are measured, not chosen. They were fitted against the two documents I had
-written by hand, and admit both with zero problems. Then the gate immediately earned its
-keep by catching my own over-correction: the first rewrite came back marking 66% of bullets
-where the hand-written references sit at 40 to 43%.
+I did not pick those thresholds. I measured them on the two applications I had written by hand,
+which both pass cleanly. The check paid for itself right away by catching my own
+over-correction: the next draft bolded 66% of its bullet points, where my hand-written ones sit
+at 40 to 43%.
 
-## The boundary that is deliberately not automated
+## Public engine, private evidence
 
-The engine and the evidence are two repositories. This one is public and contains no
-personal data by design; the dossier, the master résumés and the sent applications live in a
-private sibling. Credentials go in a database on a private network, never in the application
-folder, because that folder is committed to git and a password written there is in history
-permanently.
+The code and the evidence live in two separate repositories. This one is public and contains no
+personal data by design. My records, master CVs and sent applications live in a private one.
+Credentials go in a database on a private network, never in the project folder, because that
+folder is in git and a password committed there stays in the history forever.
 
 ## Status
 
-In progress. Hunt, drafter, verifier and the approval gate are built and running; the
-submitter, the one component that takes an irreversible outward action, is not. That
-ordering is deliberate.
+The search loop, the drafter, the checker and the approval step are built and running. The
+submitter, the one part that takes an action I cannot undo, is not built yet. That order is on
+purpose.

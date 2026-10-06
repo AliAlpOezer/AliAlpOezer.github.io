@@ -1,10 +1,15 @@
 ---
 title: Munich Apartment Agent
+headline: An agent that hunts for flats in Munich while I sleep
 summary: >-
-  An autonomous agent on a three-hour timer: scrape, filter, dedup, enrich, persist, notify.
-  Deterministic where correctness matters, the model only at the edges, and a heartbeat that
-  proves it is alive.
-tagline: The part I got right was deciding which parts the model is not allowed to touch.
+  Good flats in Munich are gone within hours. This agent checks a listing site every three
+  hours, keeps only what fits my rules, and messages me on Telegram when something new
+  turns up.
+takeaways:
+  - Let code make the decisions that have to be right, and give the model only the fuzzy part. A rule in code can be tested. A rule in a prompt can drift.
+  - Anything that runs unattended needs a heartbeat. From the outside, a silent agent and a dead one look exactly the same.
+  - Use the cheap check to narrow things down, then pay for the accurate check only on what is left.
+  - Escalate to a stronger model only when a cheaper one fails or is unsure, so the bill follows how hard the work was, not how much of it there was.
 stack: [LangGraph, Python, SQLite, FastAPI, systemd, curl-cffi]
 period: "2026"
 status: live
@@ -14,96 +19,92 @@ repo: https://github.com/AliAlpOezer/munich-apartment-agent
 claims: [proj.munich_agent]
 ---
 
-Munich's rental market moves faster than a person can watch it. This agent watches it
-instead. A systemd timer fires every three hours and a LangGraph state machine runs scrape →
-filter → dedup → detail → enrich → persist → notify, ending in a Telegram message if
-anything is worth my attention. It runs on a small home server and I do not touch it between
-runs.
+Looking for a flat in Munich is mostly refreshing a page. The good listings are gone within
+hours, so whoever checks most often wins. I did not want that job, so I built something to
+do it for me.
 
-## Deterministic core, model at the edges
+Every three hours a timer on a small server at home starts the agent. It fetches the latest
+listings, throws out anything that breaks my rules, ignores flats it has already seen, looks
+up the real price of what is left, has a language model judge how well each one fits, saves
+everything, and sends me a Telegram message if anything is worth a look. I do not touch it
+between runs.
 
-The filter is pure Python: rent, size, move-in date, radius. No LLM call, unit-tested, and
-the same input always produces the same decision.
+It is built as a [LangGraph](https://langchain-ai.github.io/langgraph/) graph, one node per
+step, so each step can be tested on its own and a crashed run can resume where it stopped.
 
-The model ranks fit and writes prose. That is all it does. **It never decides control flow.**
-There is exactly one conditional edge in the graph, and it is deterministic: when dedup
-finds zero new listings, the run skips straight to the end and nothing downstream executes
-on an empty diff.
+## Code decides, the model reads
 
-This is the decision I would defend hardest. An agent that lets a language model decide
-whether a flat matches your budget is not more capable, it is just less predictable about
-arithmetic, and when it drifts you cannot tell whether the rule changed or the mood did.
+The most important decision in this project is what the language model is not allowed to
+do.
 
-## The listing price is a lie, and fixing that costs requests
+The filter is plain Python: rent, size, move-in date, distance. It has unit tests, makes no
+model calls, and gives the same answer for the same listing every time. The model only does
+the part code is bad at: reading a free-text description and judging how well a flat
+matches what I am looking for.
 
-Search results on the target site show a price that is usually *Kaltmiete*, cold rent,
-excluding utilities. What you actually pay is the *Warmmiete*, and in Munich the gap between
-them varies far too widely to estimate.
+The model never decides what happens next, either. There is exactly one branch in the
+graph, and it is ordinary code: if there are no new listings, the run ends early.
 
-So the card price is treated as a permissive lower bound only. Every candidate that survives
-the cheap filter gets its detail page fetched to resolve the true warm rent, and then the
-filter runs again against the real number.
+Why be so strict? Because an agent that asks a model whether a flat is within budget is not
+smarter, it is just worse at arithmetic. And when it gets it wrong, you cannot tell whether
+the rule changed or the model did.
 
-The two alternatives were both worse in ways that are easy to miss. Trusting the card price
-is fast and *systematically* wrong, always in the same direction, so the agent quietly
-notifies you about flats you cannot afford. Estimating utilities as a fixed percentage is
-cheap and wrong unpredictably, which is harder to debug than wrong consistently.
+## The price on the card is not the rent
 
-What it costs: N additional HTTP requests per run against a site that is already watching
-for bots, and an HTML detail parser that will break on the next layout change.
+The price shown in search results is usually the cold rent, without utilities. What you
+actually pay is the warm rent, and in Munich the gap between them varies too much to guess.
+
+Trusting the card price would be fast and wrong in a consistent direction: the agent would
+keep sending me flats I cannot afford. Adding a fixed percentage would be cheap and wrong in
+unpredictable ways, which is even harder to debug.
+
+So the card price is treated as a lower bound. Anything that passes the cheap filter gets
+its detail page fetched, the real warm rent is read from it, and the filter runs again on
+the real number. That costs extra requests, but only for the handful of listings that
+survived the first pass.
 
 ## Getting the page at all
 
-Plain `requests` is reliably blocked, not by a rate limit but by a TLS fingerprint check.
-The fetcher uses `curl-cffi` impersonating Chrome's TLS handshake, with headless Playwright
-as an escalation only when that fails.
+Ordinary Python HTTP requests get blocked, not because of rate limits but because the site
+recognises the network fingerprint of a script. The fetcher uses `curl-cffi` to present the
+same fingerprint as Chrome, and falls back to a headless browser if that fails.
 
-I will describe this honestly: it is a cat-and-mouse hack and it breaks when the site
-upgrades its detection. Scraping goes through a source-adapter interface, so adding a second
-site is a subclass rather than a change to the graph, and swapping the fetch strategy does
-not touch anything above it.
+I know this is a cat-and-mouse arrangement that will break when the site changes. That is
+why fetching sits behind its own interface: when it breaks, only that piece changes, and
+adding a second site would be a new class rather than a change to the graph.
 
-## Cost that scales with difficulty, not volume
+## Paying for difficulty, not volume
 
-Three LLM tiers: a free route first, a cheap paid route second, a frontier model third. The
-router escalates only on an error or when the answer comes back below a confidence
-threshold.
+The model calls go through three tiers: a free model first, a cheap paid one second, a
+frontier model last. A call only moves up a tier when the one below fails or returns an
+answer below a confidence threshold.
 
-Always-Claude is simple and costs money on every run forever. A single free model is free
-and brittle with no recovery path. Confidence-gated escalation means the bill tracks how
-hard the work was rather than how much of it there was. The cost accepted is latency
-variance: an awkward listing can traverse several throttled free models before it reaches
-the tier that answers.
+Always using the best model is simple, and it costs money on every run forever. Using only
+a free model is free and has no way to recover. With escalation, easy listings cost nothing
+and only awkward ones reach the expensive tier. The price is that a tricky listing sometimes
+takes a while to get through the queue.
 
-## The heartbeat, and the bug it found
+## A heartbeat, and the bug it found
 
-Every run sends a heartbeat, even a run that found nothing. That exists for one reason: a
-silent agent and a dead agent look identical from the outside, and the failure mode of
-something that runs while you sleep is not crashing, it is quietly stopping.
+Every run sends me a short heartbeat, even when it found nothing. Something that runs while
+you sleep rarely fails by crashing loudly. It fails by quietly stopping, and without a
+heartbeat that looks exactly like a quiet week on the housing market.
 
-It worked. The heartbeats surfaced a run reporting `scraped=18 / matched=12 / new=0`
-identically, hour after hour, for most of a day. Something upstream is serving a stale or
-cached result set and I have not yet proved which.
+It paid off. The heartbeats showed the same counts, 18 scraped, 12 matched, 0 new, run after
+run for most of a day. Something upstream was serving a stale or cached result. I have not
+proved what yet, but I would never have noticed from the notifications alone.
 
-That is the honest state of it: the observability found a bug the notifications never would
-have, and the bug is still open. Instrumentation earns its place by telling you things you
-did not want to hear.
+## Smaller decisions that keep it running
 
-## The rest of the unattended problem
+**Resumable runs.** The graph saves a checkpoint after each step in SQLite, so an
+interrupted run continues from the last finished step instead of fetching everything again.
 
-**Durable checkpointing.** The graph compiles with a SQLite checkpointer, so an interrupted
-run resumes from the last completed node rather than restarting and re-fetching.
+**Retries only where they help.** A network timeout is worth retrying. A parsing error is not,
+and retrying it just sends three more requests for the same broken page.
 
-**Retries scoped to transient failures only.** A network timeout is worth retrying. A parse
-error is not, and retrying it burns three requests on the same broken input.
+**One SQLite file, not a hosted database.** The first version used Supabase. For one machine
+and one user, that was a network dependency and a set of credentials that bought nothing, so
+it came out.
 
-**One local SQLite file, not a hosted database.** One box, one writer. Supabase was in the
-first version and came out: a network dependency and a set of credentials were pure
-overhead. The cost is no managed backups and no remote access without SSH, which is the
-right trade at this size and would be the wrong one at any other.
-
-**Feedback that costs one tap.** A 👍 or 👎 reaction on a Telegram notification feeds a
-learned preference model. Human-in-the-loop only works when the loop is cheaper than
-ignoring it.
-
-93 tests pass, one skipped behind a flag that hits live models.
+**Feedback in one tap.** A thumbs up or down on a Telegram message is saved as a preference
+for future ranking. Giving feedback only works if it is easier than ignoring the message.

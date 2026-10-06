@@ -14,6 +14,14 @@ npm run build      # -> dist/
 npm run preview    # serve the built output
 ```
 
+The public, employer-neutral CV is edited in `src/cv/public-cv.html` and regenerated with
+`npm run build:cv`. The generated PDF is `public/cv/ali-alp-oezer.pdf`. Review its text and
+rendered page before publishing. Do not copy a tailored PDF from `advocate-data` into this
+public repository: those files contain private contact details and employer-specific copy.
+
+Deployment: every push to `main` builds and publishes to GitHub Pages at
+<https://alialpoezer.github.io/> through `.github/workflows/deploy.yml`.
+
 One-off, only when changing typefaces:
 
 ```bash

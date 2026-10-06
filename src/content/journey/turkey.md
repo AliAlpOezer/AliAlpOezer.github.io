@@ -5,7 +5,7 @@ location: Turkey
 kind: education
 start: 2017-09-01
 end: 2020-06-30
-period: 2017 – 2020
+period: 2017 - 2020
 claims: [edu.turkey_prior]
 ---
 

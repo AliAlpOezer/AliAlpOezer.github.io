@@ -1,10 +1,14 @@
 ---
 title: Atlas
+headline: A chat assistant where every citation opens the text it came from
 summary: >-
-  A multi-provider tool-using assistant with a step-capped agent loop, a retrieval page
-  backed by a separate Python service, and an inspector that shows you the raw chunks
-  behind every citation.
-tagline: Two agent loops that do different jobs, kept deliberately apart.
+  A web app with two sides: an assistant that uses tools, and a question-answering page built
+  on Sage where each citation opens the exact chunk of documentation behind it.
+takeaways:
+  - Let people open every citation. A citation nobody can inspect is just a claim.
+  - Give every tool a way to say no. A lookup that returns "not found" keeps the model from filling the gap.
+  - Cap the agent loop. An unbounded loop is an unbounded bill.
+  - Put boundaries where the build enforces them. Secrets live in a server-only module, so a mistake fails the build instead of shipping a key.
 stack: [Next.js, TypeScript, Vercel AI SDK, Anthropic, OpenRouter]
 period: "2026"
 status: shipped
@@ -12,77 +16,70 @@ order: 50
 claims: [proj.atlas]
 ---
 
-Atlas has two surfaces. A streaming tool-using chat, and a retrieval Q&A page backed by
-[Sage](/work/sage), a Python service in a separate repository.
+Atlas is where I practise building the parts of an AI app that users touch. It has two pages:
+a streaming chat assistant that can call tools, and a question-answering page backed by
+[Sage](/work/sage), my retrieval service, which runs as a separate Python project.
 
-Keeping those two things apart was the first decision worth making. A tool-calling loop and
-a retrieve-then-answer loop look similar in a UI and behave nothing alike, and folding them
-into one chat window would have conflated two different failure modes into one box that
-sometimes cites and sometimes does not. So retrieval lives on its own route, reachable from
-a tab, and the tool-using assistant stays exactly as it was. It is also the reversible
-choice, which is usually the argument that decides it.
+Keeping those two apart was the first real decision. A tool-calling assistant and a
+retrieve-then-answer system look alike in a chat window but fail in completely different ways.
+Merging them would have produced one box that sometimes cites its sources and sometimes does
+not, with no way to tell which mode you were in. So retrieval has its own page, one tab away,
+and the assistant stayed as it was. It was also the easier choice to reverse, which usually
+settles it.
 
-## A tool that throws on purpose
+## A tool that fails on purpose
 
-There are three tools: a calculator, a lookup against a small in-repo knowledge base, and a
-unit converter. Two of them return `{ ok: false, error }` when they fail. The calculator
-throws.
+The assistant has three tools: a calculator, a lookup against a small knowledge base, and a
+unit converter. Two of them return a structured error when they fail. The calculator throws.
 
-That is deliberate and it is not a bug waiting to be tidied up. Anything outside a
-`^[0-9+\-*/(). %]+$` whitelist raises, because the point of that tool is to exercise the
-path where a thrown error becomes a tool-error part in the stream that the model can read
-and recover from. If the assistant handles it badly, the fix belongs in the system prompt,
-not in making the tool lie about failing.
+That is deliberate. Anything outside a strict whitelist of characters raises an error, because
+I wanted to exercise the path where a thrown error reaches the model as part of the stream and
+the model has to recover. If it recovers badly, the fix belongs in the system prompt, not in
+making the tool pretend it worked.
 
-The lookup tool has the complementary property: when it finds nothing it returns
-`found: false` rather than a plausible-looking answer. Half of grounding a model is giving
-its tools a way to say no.
+The lookup tool does the opposite: when it finds nothing, it says `found: false` instead of
+returning something plausible. Half of keeping a model grounded is giving its tools a way to
+say no.
 
-The agent loop is capped at five steps. An unbounded loop is a bill.
+The agent loop stops after five steps. An unbounded loop is an unbounded bill.
 
-## Boundaries that the type system enforces
+## Boundaries the build enforces
 
-Model metadata and provider clients are two different files on purpose. `lib/models.ts` is
-pure data with no provider imports and no secrets, so a client component can import it to
-render the model switcher. `lib/provider.ts` is marked `server-only` and is the single place
-in the app that constructs a real provider client. A client component that reaches for the
-wrong one fails the build rather than shipping a key.
+The list of models and the code that talks to providers live in two different files on purpose.
+The model list is plain data with no secrets, so the browser can import it to draw the model
+picker. The provider code is marked server-only and is the one place that creates a real API
+client. If a browser component ever reaches for it, the build fails instead of shipping a key.
 
-The same shape applies across the network boundary. The browser never calls the Python
-service directly. It posts to this app's own route, which proxies onward, so the upstream
-host and any credentials stay server-side and there is no CORS in the real request path. The
-cost is an extra hop and a 502 to handle when the backend is down or its index is empty,
-which is a cost I would rather pay than the alternative.
+The same idea applies across the network. The browser never calls the Python service directly.
+It calls Atlas's own server route, which forwards the request, so the service address and any
+credentials stay on the server. The cost is one extra hop and an error to handle when the
+retrieval service is down.
 
-System prompts are data too. Four personas live in a library and the route composes a base
-rule set with the selected persona. The personas never contain the tool-use rules, so
-switching voice cannot accidentally switch behaviour.
+System prompts are data too. Four personas live in a small library, and the server combines a
+base set of rules with the persona you picked. The personas never contain the tool rules, so
+changing the voice cannot change the behaviour.
 
 ## Showing the retrieval, not just the answer
 
-Every `[n]` citation on the retrieval page links to an inspector that shows the raw chunk
-behind it: title, source URL, similarity score, full text.
+Every `[n]` citation on the retrieval page opens an inspector with the raw chunk behind it: page
+title, source link, similarity score and full text.
 
-This started as a debugging affordance and stayed because it is the honest version of a
-cited answer. A citation that you cannot open is a claim that the system retrieved something
-relevant, and the whole reason to build retrieval evaluation is that this claim is often
-false. Being able to see, in one click, that the model wrote a good sentence off a chunk
-scoring 0.31 changes what you work on next.
+I built it to debug and kept it because it is the honest version of a cited answer. A citation
+you cannot open is only a claim that the system found something relevant, and the reason I
+evaluate retrieval at all is that this claim is often wrong. Seeing in one click that a
+confident sentence was written from a chunk scoring 0.31 changes what you work on next.
 
-## The rule this repo is actually testing
+## Keeping AI-written code honest
 
-Every commit is tagged `[hand]`, `[ai]` or `[hand+ai]`, and any AI-written line I cannot
-explain in a self-review gets deleted and rewritten rather than kept.
+Every commit in this project is tagged as written by hand, by AI, or both. Any AI-written line I
+cannot explain when I review it gets deleted and rewritten.
 
-Atlas is classified in my own working contract as production code where AI assistance is
-*required*, because building at that speed is the skill being practised. The tagging is what
-stops that from quietly becoming code I merely host. Glancing at the ratio each week is a
-cheap signal that the practice has not drifted.
+Atlas is the project where I deliberately build fast with AI assistance, because that is a skill
+worth practising too. The tags stop that from quietly turning into code I merely host, and
+glancing at the ratio each week tells me whether the habit is holding.
 
-## What is not done
+## Not done yet
 
-The eval suite is a spec and 30 drafted cases. The ground truth is not hand-labelled yet,
-there is no runner committed, and the release pass bar is still a placeholder in the spec
-file. I would rather say that than describe an eval harness that does not run: the argument
-of the rest of this site is that an unmeasured system is unmeasured no matter how it is
-described.
+The evaluation suite is a written spec and 30 drafted test cases. The answers are not
+hand-labelled yet, nothing runs them, and the passing bar is still a placeholder. I would rather
+say so than describe a test suite that does not exist.

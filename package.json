@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node scripts/check-public-cv.mjs && astro build",
+    "build:cv": "node scripts/build-public-cv.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "check:claims": "node scripts/check-claims.mjs",

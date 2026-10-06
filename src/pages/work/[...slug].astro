@@ -16,7 +16,7 @@ const { Content } = await render(project);
 const d = project.data;
 
 const STATUS_TEXT: Record<string, string> = {
-  live: 'Running in production',
+  live: 'Running',
   shipped: 'Shipped',
   building: 'In progress',
   archived: 'Archived',
@@ -25,10 +25,9 @@ const STATUS_TEXT: Record<string, string> = {
 <Base title={d.title} description={d.summary}>
   <article class="wrap">
     <header>
-      <p class="label"><a href="/work">Work</a> <span aria-hidden="true">/</span> {d.period}</p>
-      <h1>{d.title}</h1>
-      {d.tagline && <p class="tagline">{d.tagline}</p>}
-
+      <p class="label"><a href="/work">Work</a> <span aria-hidden="true">/</span> {d.title}</p>
+      <h1>{d.headline}</h1>
+      <p class="lede">{d.summary}</p>
       <dl class="facts">
         <div>
           <dt>Status</dt>
@@ -38,20 +37,43 @@ const STATUS_TEXT: Record<string, string> = {
           </dd>
         </div>
         <div>
-          <dt>Stack</dt>
-          <dd>{d.stack.join(' · ')}</dd>
+          <dt>Year</dt>
+          <dd>{d.period}</dd>
         </div>
-        {(d.repo || d.demo) && (
+        <div>
+          <dt>Built with</dt>
+          <dd>{d.stack.join(', ')}</dd>
+        </div>
+        {((d.repo && d.sourceReviewed) || d.demo) && (
           <div>
             <dt>Links</dt>
             <dd class="links">
-              {d.repo && <a class="link" href={d.repo} rel="noopener">Source</a>}
+              {d.repo && d.sourceReviewed && <a class="link" href={d.repo} rel="noopener">Source</a>}
               {d.demo && <a class="link" href={d.demo} rel="noopener">Live</a>}
             </dd>
           </div>
         )}
       </dl>
+      {d.recognition && <p class="recognition">{d.recognition}</p>}
     </header>
+    {d.takeaways.length > 0 && (
+      <section class="takeaways" aria-labelledby="takeaways-title">
+        <h2 id="takeaways-title">What I would reuse</h2>
+        <ul>
+          {d.takeaways.map((t) => <li>{t}</li>)}
+        </ul>
+      </section>
+    )}
+    {d.media.length > 0 && (
+      <div class="gallery" aria-label="Project interface screenshots">
+        {d.media.map((item, index) => (
+          <figure>
+            <img src={item.src} alt={item.alt} loading={index === 0 ? 'eager' : 'lazy'} />
+            <figcaption>{item.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+    )}
 
     <div class="prose">
       <Content />
@@ -77,13 +99,50 @@ const STATUS_TEXT: Record<string, string> = {
     line-height: var(--leading-snug);
   }
 
-  .tagline {
-    font-family: var(--font-display);
+  .lede {
     font-size: var(--text-lg);
-    font-style: italic;
+    line-height: var(--leading-body);
     color: var(--ink-muted);
     max-width: var(--measure);
-    margin-top: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+
+  .recognition { margin-top: var(--space-md); color: var(--accent); font-weight: 600; font-size: var(--text-sm); }
+
+  .takeaways {
+    max-width: var(--measure);
+    margin-bottom: var(--space-xl);
+    padding: var(--space-md) var(--space-lg);
+    border: var(--hairline) solid var(--rule);
+    border-radius: var(--radius-lg);
+    background: var(--paper-sunk);
+  }
+  .takeaways h2 {
+    font-size: var(--text-sm);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+  .takeaways ul { list-style: none; padding: 0; margin-top: var(--space-sm); display: grid; gap: var(--space-sm); }
+  .takeaways li {
+    position: relative;
+    padding-left: var(--space-md);
+    font-size: var(--text-base);
+    line-height: var(--leading-body);
+  }
+  .takeaways li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 0.5rem;
+    height: 0.125rem;
+    border-radius: 1px;
+    background: var(--accent);
+  }
+  @media (max-width: 34rem) {
+    .takeaways { padding: var(--space-md); }
   }
 
   .facts {
@@ -114,6 +173,11 @@ const STATUS_TEXT: Record<string, string> = {
     margin-right: 0.4rem;
     vertical-align: baseline;
   }
+
+  .gallery { display: grid; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+  .gallery figure { margin: 0; }
+  .gallery img { display: block; width: 100%; height: auto; border: var(--hairline) solid var(--rule); border-radius: var(--radius-md); box-shadow: var(--shadow-product); }
+  .gallery figcaption { margin-top: var(--space-2xs); color: var(--ink-faint); font-size: var(--text-sm); }
 
   .tail {
     margin-top: var(--space-xl);

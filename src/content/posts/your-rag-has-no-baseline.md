@@ -4,6 +4,7 @@ description: >-
   Most retrieval "improvements" are unfalsifiable. What it takes to build a golden set
   small enough to hand-label and honest enough to trust.
 pubDate: 2026-08-10
+updated: 2026-10-06
 tags: [RAG, evaluation, retrieval]
 ---
 
@@ -37,8 +38,9 @@ For [Sage](/work/sage) I hand-labelled a golden set split across four categories
 - **Multi-hop** - the answer requires combining two chunks that do not reference each other.
 - **Unanswerable** - the corpus does not contain the answer at all.
 
-The set is small. Small enough that labelling it was an afternoon rather than a project,
-which is the only reason it exists.
+The set is small: 36 questions, 14 of them unanswerable. A model drafted the candidate
+questions; I wrote every answer myself. Small enough to label by hand is the only reason it
+exists.
 
 ## The category that matters most
 
@@ -54,20 +56,26 @@ confident and wrong.
 The only way to find that failure is to ask questions you know the corpus cannot answer,
 and check that the system says so.
 
-When I added unanswerable questions to Sage's golden set, the pass rate on that category
-started at roughly zero. Not because retrieval was bad, but because nothing in the pipeline
-had ever been asked to abstain.
+Sage, as it happens, declined those questions correctly. And that exposed a second problem:
+the answer relevancy metric has no way to reward "this is not in the docs", so every correct
+refusal scored zero. Most of my worst-scoring cases were the system doing the right thing.
+Without the category, I would never have seen either the behaviour or the blind spot in the
+metric.
 
 ## Longitudinal, not one-shot
 
 The score is worth little on the day you first compute it. What makes it valuable is the
 row below it next month.
 
-Sage keeps a baseline scorecard over time, and every pipeline variant is A/B tested against
-it. The interesting result is not "this configuration scores 0.78". It is "this change moved
-multi-hop up four points and moved unanswerable down nine", which is a trade-off you can
-actually reason about, and which no amount of reading four sample answers would ever have
-surfaced.
+Sage keeps every scored run in an append-only log, and each change is compared against the
+baseline. The interesting result is never a single score. It is a shape, like "this change
+helped the multi-hop questions and hurt the ones it should refuse", which is a trade-off you
+can reason about and which reading four sample answers will never show you.
+
+It only works if one thing changes at a time. My first hybrid-search run changed the
+retriever *and* the judge model, so its numbers cannot be compared with the baseline at all.
+The fix is boring: score the baseline again with the new judge. A baseline is only a
+baseline if everything except the change stays still.
 
 ## The uncomfortable part
 
